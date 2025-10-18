@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Life Dashboard</title>
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React Libraries -->
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <!-- Babel to compile JSX in the browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script>
+        tailwind.config = { darkMode: 'class' }
+    </script>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const { useState, useEffect, useMemo, useRef } = React;
+
+      // --- ICONS (as SVG components) ---
+      const MoneyIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>);
+      const LifeIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>);
+      const GrowIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>);
+      const AccountIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>);
+      const PlusIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>);
+      const MinusIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 12H6" /></svg>);
+      const FoodIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6" /></svg>);
+      const TransportIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" /></svg>);
+      const BillsIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>);
+      const ShoppingIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" /></svg>);
+      const FunIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>);
+      const HealthIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>);
+      const OtherIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" /></svg>);
+      const SalaryIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>);
+      const GiftIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" /></svg>);
+      const BackArrowIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>);
+      const EditIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>);
+
+      // --- DATA & HELPERS ---
+      const CATEGORIES = { expense: [{ id: 'food', name: 'Food', Icon: FoodIcon, color: '#FF6384' },{ id: 'transport', name: 'Transport', Icon: TransportIcon, color: '#36A2EB' },{ id: 'home', name: 'Home', Icon: OtherIcon, color: '#FFCE56' },{ id: 'bills', name: 'Bills', Icon: BillsIcon, color: '#4BC0C0' },{ id: 'shopping', name: 'Shopping', Icon: ShoppingIcon, color: '#9966FF' },{ id: 'fun', name: 'Fun', Icon: FunIcon, color: '#FF9F40' },{ id: 'health', name: 'Health', Icon: HealthIcon, color: '#E83E8C' },{ id: 'other_expense', name: 'Other', Icon: OtherIcon, color: '#6C757D' }], income: [{ id: 'salary', name: 'Salary', Icon: SalaryIcon },{ id: 'gift', name: 'Gift', Icon: GiftIcon },{ id: 'other_income', name: 'Other', Icon: OtherIcon }] };
+      const ALL_CATEGORIES = [...CATEGORIES.expense, ...CATEGORIES.income].reduce((acc, cat) => { acc[cat.id] = cat; return acc; }, {});
+      const NEPALI_MONTH_DATA = { 2070: [30, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], 2071: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], 2072: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], 2073: [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 30, 30], 2074: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], 2075: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], 2076: [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 30, 30], 2077: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], 2078: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], 2079: [31, 31, 32, 32, 31, 30, 29, 30, 29, 30, 29, 31], 2080: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], 2081: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], 2082: [30, 32, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], 2083: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], 2084: [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 30, 30], 2085: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], 2086: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], 2087: [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 30, 30], 2088: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], 2089: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], 2090: [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 30, 30] };
+      const NEPALI_MONTHS = ['Baishakh','Jestha','Ashadh','Shrawan','Bhadra','Ashwin','Kartik','Mangsir','Poush','Magh','Falgun','Chaitra'];
+      const NEPALI_YEAR_START_GREGORIAN_DATE = { 2070: '2013-04-14', 2071: '2014-04-14', 2072: '2015-04-14', 2073: '2016-04-13', 2074: '2017-04-14', 2075: '2018-04-14', 2076: '2019-04-14', 2077: '2020-04-13', 2078: '2021-04-14', 2079: '2022-04-14', 2080: '2023-04-14', 2081: '2024-04-13', 2082: '2025-04-14', 2083: '2026-04-14', 2084: '2027-04-14', 2085: '2028-04-13', 2086: '2029-04-14', 2087: '2030-04-14', 2088: '2031-04-14', 2089: '2032-04-13', 2090: '2033-04-14' };
+      const gregorianToNepali = (gregorianDate) => { const defaultDate = { year: 2081, month: 1, day: 1, monthName: 'Baishakh' }; if (!gregorianDate) return defaultDate; const inputDate = new Date(gregorianDate); inputDate.setUTCHours(0, 0, 0, 0); let nepaliYear; const sortedYears = Object.keys(NEPALI_YEAR_START_GREGORIAN_DATE).sort((a, b) => b - a); for (const year of sortedYears) { const startDate = new Date(NEPALI_YEAR_START_GREGORIAN_DATE[year]); startDate.setUTCHours(0, 0, 0, 0); if (inputDate >= startDate) { nepaliYear = parseInt(year); break; } } if (!nepaliYear) return defaultDate; const nepaliYearStartDate = new Date(NEPALI_YEAR_START_GREGORIAN_DATE[nepaliYear]); nepaliYearStartDate.setUTCHours(0, 0, 0, 0); const dayDiff = Math.round((inputDate - nepaliYearStartDate) / (1000 * 60 * 60 * 24)); let nepaliMonth = 1, nepaliDay = dayDiff + 1; const monthDaysData = NEPALI_MONTH_DATA[nepaliYear]; if (!monthDaysData) return defaultDate; for (let i = 0; i < monthDaysData.length; i++) { const daysInMonth = monthDaysData[i]; if (nepaliDay <= daysInMonth) break; else { nepaliDay -= daysInMonth; nepaliMonth++; } } return { year: nepaliYear, month: nepaliMonth, day: nepaliDay, monthName: NEPALI_MONTHS[nepaliMonth - 1] }; };
+      const nepaliToGregorian = (nepaliYear, nepaliMonth, nepaliDay) => { const gregorianStartDateStr = NEPALI_YEAR_START_GREGORIAN_DATE[nepaliYear]; if (!gregorianStartDateStr) return new Date().toISOString().split('T')[0]; const gregorianStartDate = new Date(gregorianStartDateStr); let daysToAdd = 0; const monthData = NEPALI_MONTH_DATA[nepaliYear]; if (!monthData) return new Date().toISOString().split('T')[0]; for (let i = 0; i < nepaliMonth - 1; i++) { daysToAdd += monthData[i]; } daysToAdd += nepaliDay - 1; const resultDate = new Date(gregorianStartDate.getTime()); resultDate.setDate(gregorianStartDate.getDate() + daysToAdd); return resultDate.toISOString().split('T')[0]; };
+      
+      const WORKOUT_DATA = {
+        'Chest': [
+          { id: 1, name: 'Push-up', description: 'A classic bodyweight exercise. Start in a plank position, lower your body until your chest nearly touches the floor, and push back up.', gif: 'https://gymvisual.com/img/p/1/7/2/3/4/17234.gif' },
+          { id: 2, name: 'Incline Dumbbell Press', description: 'Lie on an incline bench with a dumbbell in each hand. Press the dumbbells up until your arms are fully extended.', gif: 'https://gymvisual.com/img/p/1/0/2/8/4/10284.gif' },
+          { id: 3, name: 'Dumbbell Fly', description: 'Lie on a flat bench with dumbbells. Open your arms wide, lowering the weights until they are level with your chest, then bring them back up.', gif: 'https://gymvisual.com/img/p/1/0/3/2/1/10321.gif' },
+        ],
+        'Back': [
+          { id: 4, name: 'Pull-up', description: 'Grab a pull-up bar with an overhand grip. Pull your body up until your chin is over the bar, then lower back down.', gif: 'https://gymvisual.com/img/p/1/7/2/2/8/17228.gif' },
+          { id: 5, name: 'Bent-Over Row', description: 'Hold a barbell with an overhand grip, bend at your hips and knees. Pull the bar towards your waist.', gif: 'https://gymvisual.com/img/p/1/0/0/0/3/10003.gif' },
+          { id: 18, name: 'Lat Pulldown', description: 'Sit at a lat pulldown machine and grab the bar with a wide grip. Pull the bar down to your chest, squeezing your back muscles.', gif: 'https://gymvisual.com/img/p/1/3/1/2/4/13124.gif' }
+        ],
+        'Legs': [
+          { id: 6, name: 'Barbell Squat', description: 'Stand with your feet shoulder-width apart, barbell on your upper back. Lower your hips as if sitting in a chair, keeping your chest up.', gif: 'https://gymvisual.com/img/p/1/0/0/3/1/10031.gif' },
+          { id: 7, name: 'Lunge', description: 'Step forward with one leg and lower your hips until both knees are bent at a 90-degree angle.', gif: 'https://gymvisual.com/img/p/1/7/2/1/9/17219.gif' },
+          { id: 19, name: 'Leg Press', description: 'Sit on a leg press machine with your feet on the platform. Push the platform away by extending your knees.', gif: 'https://gymvisual.com/img/p/1/2/9/3/8/12938.gif'}
+        ],
+        'Shoulders': [
+            { id: 8, name: 'Overhead Press', description: 'Sit or stand holding dumbbells at your shoulders. Press them overhead until your arms are fully extended.', gif: 'https://gymvisual.com/img/p/1/0/2/6/1/10261.gif' },
+            { id: 20, name: 'Lateral Raise', description: 'Stand holding dumbbells at your sides. Raise your arms out to the sides until they are parallel with the floor.', gif: 'https://gymvisual.com/img/p/1/0/2/0/3/10203.gif'}
+        ],
+        'Biceps': [
+            { id: 9, name: 'Bicep Curl', description: 'Stand holding dumbbells with an underhand grip. Curl the weights toward your shoulders, squeezing your biceps.', gif: 'https://gymvisual.com/img/p/1/0/0/9/5/10095.gif' },
+             { id: 21, name: 'Hammer Curl', description: 'Stand holding dumbbells with a neutral (hammer) grip. Curl the weights up, keeping your palms facing each other.', gif: 'https://gymvisual.com/img/p/1/0/1/7/9/10179.gif'}
+        ],
+        'Triceps': [
+            { id: 10, name: 'Tricep Dip', description: 'Use parallel bars or a bench. Lower your body until your elbows are at 90 degrees, then push back up.', gif: 'https://gymvisual.com/img/p/1/5/4/6/6/15466.gif' },
+            { id: 22, name: 'Skull Crusher', description: 'Lie on a bench holding an EZ bar or dumbbells above your chest. Lower the weight towards your forehead by bending your elbows.', gif: 'https://gymvisual.com/img/p/1/2/8/0/5/12805.gif' }
+        ],
+        'Abs': [
+            { id: 11, name: 'Plank', description: 'Hold a push-up position with your body in a straight line from head to heels. Engage your core.', gif: 'https://gymvisual.com/img/p/1/7/2/2/6/17226.gif' },
+            { id: 12, name: 'Crunches', description: 'Lie on your back with knees bent. Lift your upper body towards your knees using your abdominal muscles.', gif: 'https://gymvisual.com/img/p/1/6/7/1/4/16714.gif' },
+            { id: 23, name: 'Leg Raises', description: 'Lie on your back and lift your legs straight up towards the ceiling until your butt lifts off the floor.', gif: 'https://gymvisual.com/img/p/1/7/1/7/2/17172.gif'}
+        ],
+      };
+
+
+      // --- CHILD COMPONENTS ---
+      const PieChart = ({ data }) => {
+          const size = 192; const donutThickness = 24; const center = size / 2; const radius = center - (donutThickness / 2); if (!data || data.length === 0) return null; const total = data.reduce((sum, item) => sum + item.value, 0); if (total === 0) return null; let cumulativePercent = 0;
+          const segments = data.map((item, index) => { const percent = item.value / total; const getCoordinatesForPercent = (p) => [center + radius * Math.cos(2 * Math.PI * p), center + radius * Math.sin(2 * Math.PI * p)]; const [startX, startY] = getCoordinatesForPercent(cumulativePercent); cumulativePercent += percent; const [endX, endY] = getCoordinatesForPercent(cumulativePercent); const largeArcFlag = percent > 0.5 ? 1 : 0; const pathData = `M ${startX} ${startY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`; return <path key={index} d={pathData} fill="none" stroke={item.color} strokeWidth={donutThickness} />; });
+          return (<div className="relative w-48 h-48 mx-auto flex items-center justify-center"><svg viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">{segments}</svg><div className="absolute text-center"><p className="text-xs text-gray-500 dark:text-gray-400">Total Spent</p><p className="font-bold text-xl text-gray-800 dark:text-gray-200">रु {total.toLocaleString('en-NP')}</p></div></div>);
+      };
+      const NepaliDatePicker = ({ gregorianDate, setGregorianDate, onClose }) => { const [currentNepaliDate, setCurrentNepaliDate] = useState(() => gregorianToNepali(gregorianDate)); const changeMonth = (delta) => { let newMonth = currentNepaliDate.month + delta; let newYear = currentNepaliDate.year; if (newMonth > 12) { newMonth = 1; newYear++; } else if (newMonth < 1) { newMonth = 12; newYear--; } if (NEPALI_MONTH_DATA[newYear]) { setCurrentNepaliDate({ year: newYear, month: newMonth, day: 1 }); } }; const daysInMonth = NEPALI_MONTH_DATA[currentNepaliDate.year]?.[currentNepaliDate.month - 1] || 30; const firstDayOfMonthGregorian = nepaliToGregorian(currentNepaliDate.year, currentNepaliDate.month, 1); const firstDayOfWeek = new Date(firstDayOfMonthGregorian).getDay(); const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1); const blanks = Array(firstDayOfWeek).fill(null); return ( <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50" onClick={onClose}> <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 w-80" onClick={e => e.stopPropagation()}> <div className="flex justify-between items-center mb-4"> <button onClick={() => changeMonth(-1)} className="font-bold text-lg p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white">&lt;</button> <div> <span className="font-bold text-lg dark:text-white">{NEPALI_MONTHS[currentNepaliDate.month - 1]}</span> <span className="text-lg ml-2 dark:text-gray-300">{currentNepaliDate.year}</span> </div> <button onClick={() => changeMonth(1)} className="font-bold text-lg p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white">&gt;</button> </div> <div className="grid grid-cols-7 gap-1 text-center text-sm"> <div className="font-semibold text-gray-500 dark:text-gray-400">Sun</div><div className="font-semibold text-gray-500 dark:text-gray-400">Mon</div><div className="font-semibold text-gray-500 dark:text-gray-400">Tue</div><div className="font-semibold text-gray-500 dark:text-gray-400">Wed</div><div className="font-semibold text-gray-500 dark:text-gray-400">Thu</div><div className="font-semibold text-gray-500 dark:text-gray-400">Fri</div><div className="font-semibold text-gray-500 dark:text-gray-400">Sat</div> {blanks.map((_, i) => <div key={`blank-${i}`}></div>)} {daysArray.map(day => { const isSelected = gregorianToNepali(gregorianDate).day === day && gregorianToNepali(gregorianDate).month === currentNepaliDate.month && gregorianToNepali(gregorianDate).year === currentNepaliDate.year; return ( <div key={day} onClick={() => { setGregorianDate(nepaliToGregorian(currentNepaliDate.year, currentNepaliDate.month, day)); onClose(); }} className={`p-2 rounded-full cursor-pointer dark:text-white ${isSelected ? 'bg-teal-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}> {day} </div> ); })} </div> </div> </div> ); };
+      const AddTransactionModal = ({ isOpen, onClose, addTransaction, initialType }) => { const [type, setType] = useState(initialType); const [amount, setAmount] = useState(''); const [description, setDescription] = useState(''); const [categoryId, setCategoryId] = useState(''); const [date, setDate] = useState(new Date().toISOString().split('T')[0]); const [isDatePickerOpen, setIsDatePickerOpen] = useState(false); useEffect(() => { setType(initialType); setAmount(''); setDescription(''); setCategoryId(CATEGORIES[initialType][0].id); }, [isOpen, initialType]); if (!isOpen) return null; const handleSubmit = (e) => { e.preventDefault(); if (!amount || !categoryId) return; addTransaction({ type, amount: parseFloat(amount), description, categoryId, date }); }; const nepaliDate = gregorianToNepali(date); return ( <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-40"> <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md m-4"> <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">{type === 'income' ? 'Add Income' : 'Add Expense'}</h2> <form onSubmit={handleSubmit}> <div className="mb-4"> <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Amount</label> <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline" placeholder="रु 0.00" required /> </div> <div className="mb-4"> <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Category</label> <div className="grid grid-cols-4 gap-2"> {CATEGORIES[type].map(cat => ( <button type="button" key={cat.id} onClick={() => setCategoryId(cat.id)} className={`p-2 rounded-lg border-2 ${categoryId === cat.id ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/50' : 'border-gray-200 dark:border-gray-600'} flex flex-col items-center text-gray-700 dark:text-gray-300`}> <cat.Icon /> <span className="text-xs mt-1">{cat.name}</span> </button> ))} </div> </div> <div className="mb-4"> <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Description</label> <input type="text" value={description} onChange={e => setDescription(e.target.value)} className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600" placeholder="e.g., Lunch with friends" /> </div> <div className="mb-6"> <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Date</label> <button type="button" onClick={() => setIsDatePickerOpen(true)} className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-left">{nepaliDate.day} {nepaliDate.monthName}, {nepaliDate.year}</button> </div> <div className="flex items-center justify-between"> <button type="button" onClick={onClose} className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-lg">Cancel</button> <button type="submit" className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg">Save</button> </div> </form> {isDatePickerOpen && <NepaliDatePicker gregorianDate={date} setGregorianDate={setDate} onClose={() => setIsDatePickerOpen(false)} />} </div> </div> ); };
+      const ToDoList = ({ todos, setTodos }) => { 
+          const [newTodoText, setNewTodoText] = useState(''); 
+          const [newTodoPriority, setNewTodoPriority] = useState('medium'); 
+          const [activeTab, setActiveTab] = useState('today'); 
+          
+          const filteredTodos = useMemo(() => {
+            const now = new Date();
+            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            
+            const dayOfWeek = now.getDay(); 
+            const startOfWeek = new Date(todayStart);
+            startOfWeek.setDate(startOfWeek.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+
+            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1); 
+            const startOfYear = new Date(now.getFullYear(), 0, 1);
+            
+            let filtered = [];
+            switch (activeTab) {
+              case 'today':
+                filtered = todos.filter(todo => new Date(todo.createdAt) >= todayStart);
+                break;
+              case 'week':
+                filtered = todos.filter(todo => new Date(todo.createdAt) >= startOfWeek);
+                break;
+              case 'month':
+                filtered = todos.filter(todo => new Date(todo.createdAt) >= startOfMonth);
+                break;
+              case 'year':
+                filtered = todos.filter(todo => new Date(todo.createdAt) >= startOfYear);
+                break;
+              default:
+                filtered = todos;
+            }
+            return filtered.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+          }, [todos, activeTab]);
+
+          const addTodo = (e) => { e.preventDefault(); if (newTodoText.trim() === '') return; setTodos(prev => [{ id: Date.now(), text: newTodoText, priority: newTodoPriority, completed: false, createdAt: new Date().toISOString() }, ...prev]); setNewTodoText(''); setNewTodoPriority('medium'); }; 
+          const toggleTodo = (id) => { setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t)); }; 
+          const deleteTodo = (id) => { setTodos(prev => prev.filter(t => t.id !== id)); }; 
+          const priorityStyles = { high: 'bg-red-500', medium: 'bg-orange-500', low: 'bg-blue-500' }; 
+          const TABS = ['today', 'week', 'month', 'year']; 
+          
+          return ( <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 mt-6"> <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-4">To-Do List</h3> <div className="mb-4 border-b border-gray-200 dark:border-gray-700"> <nav className="-mb-px flex space-x-6"> {TABS.map(tab => ( <button key={tab} onClick={() => setActiveTab(tab)} className={`capitalize py-2 px-1 border-b-2 font-medium text-sm ${activeTab === tab ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'}`}> {tab === 'week' || tab === 'month' || tab === 'year' ? `This ${tab}` : tab} </button> ))} </nav> </div> <form onSubmit={addTodo} className="mb-4"> <input type="text" value={newTodoText} onChange={e => setNewTodoText(e.target.value)} placeholder="Add a new task..." className="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 leading-tight focus:outline-none focus:ring-2 focus:ring-teal-500 mb-2" /> <div className="flex items-center justify-between"> <div className="flex space-x-2"> {['low', 'medium', 'high'].map(p => (<button key={p} type="button" onClick={() => setNewTodoPriority(p)} className={`px-3 py-1 text-sm rounded-full capitalize border-2 ${newTodoPriority === p ? 'bg-teal-500 text-white border-teal-500' : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-500'}`}>{p}</button>))} </div> <button type="submit" className="bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600">Add</button> </div> </form> <ul className="space-y-2"> {filteredTodos.length > 0 ? filteredTodos.map(todo => ( <li key={todo.id} className="flex items-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"> <div className={`w-2 h-6 rounded-sm mr-3 ${priorityStyles[todo.priority]}`}></div> <input type="checkbox" checked={todo.completed} onChange={() => toggleTodo(todo.id)} className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-teal-600 focus:ring-teal-500 cursor-pointer bg-gray-100 dark:bg-gray-900"/> <span className={`flex-grow mx-3 ${todo.completed ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>{todo.text}</span> <button onClick={() => deleteTodo(todo.id)} className="text-gray-400 hover:text-red-500 text-sm">Delete</button> </li> )) : <p className="text-center text-gray-400 dark:text-gray-500 py-4">No tasks for this period.</p>} </ul> </div> );
+      };
+      const ToBuyList = ({ toBuy, setToBuy }) => { const [newItemText, setNewItemText] = useState(''); const addItem = (e) => { e.preventDefault(); if (newItemText.trim() === '') return; setToBuy(prev => [{ id: Date.now(), text: newItemText, purchased: false }, ...prev]); setNewItemText(''); }; const toggleItem = (id) => { setToBuy(prev => prev.map(item => item.id === id ? { ...item, purchased: !item.purchased } : item)); }; const deleteItem = (id) => { setToBuy(prev => prev.filter(item => item.id !== id)); }; return ( <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 mt-6"> <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-4">To Buy List</h3> <form onSubmit={addItem} className="flex mb-4"> <input type="text" value={newItemText} onChange={e => setNewItemText(e.target.value)} placeholder="Add an item..." className="flex-grow shadow-sm appearance-none border rounded-l-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 leading-tight focus:outline-none focus:ring-2 focus:ring-teal-500" /> <button type="submit" className="bg-teal-500 text-white font-bold py-2 px-4 rounded-r-lg hover:bg-teal-600">Add</button> </form> <ul className="space-y-2"> {toBuy.length > 0 ? toBuy.map(item => ( <li key={item.id} className="flex items-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"> <input type="checkbox" checked={item.purchased} onChange={() => toggleItem(item.id)} className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-teal-600 focus:ring-teal-500 cursor-pointer bg-gray-100 dark:bg-gray-900"/> <span className={`flex-grow mx-3 ${item.purchased ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>{item.text}</span> <button onClick={() => deleteItem(item.id)} className="text-gray-400 hover:text-red-500 text-sm">Remove</button> </li> )) : <p className="text-center text-gray-400 dark:text-gray-500 py-4">Your shopping list is empty.</p>} </ul> </div> ); };
+      const BMICalculator = () => { const [height, setHeight] = useState(''); const [weight, setWeight] = useState(''); const [bmi, setBmi] = useState(null); const calculateBmi = (e) => { e.preventDefault(); const h = parseFloat(height) / 100; const w = parseFloat(weight); if (h > 0 && w > 0) { const bmiValue = w / (h * h); setBmi(bmiValue.toFixed(2)); } }; const getBmiCategory = (bmi) => { if (bmi < 18.5) return { category: 'Underweight', color: 'text-blue-500' }; if (bmi >= 18.5 && bmi <= 24.9) return { category: 'Normal weight', color: 'text-green-500' }; if (bmi >= 25 && bmi <= 29.9) return { category: 'Overweight', color: 'text-orange-500' }; return { category: 'Obesity', color: 'text-red-500' }; }; return ( <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 mt-6"> <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-4">BMI Calculator</h3> <form onSubmit={calculateBmi} className="grid grid-cols-2 gap-4 mb-4"> <div> <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Height (cm)</label> <input type="number" value={height} onChange={e => setHeight(e.target.value)} required className="mt-1 shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600" /> </div> <div> <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Weight (kg)</label> <input type="number" value={weight} onChange={e => setWeight(e.target.value)} required className="mt-1 shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600" /> </div> <div className="col-span-2"> <button type="submit" className="w-full bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600">Calculate</button> </div> </form> {bmi && ( <div className="text-center bg-gray-50 dark:bg-gray-700 p-4 rounded-lg"> <p className="text-gray-600 dark:text-gray-300">Your BMI is</p> <p className="text-4xl font-bold text-teal-600 dark:text-teal-400 my-1">{bmi}</p> <p className={`font-semibold ${getBmiCategory(bmi).color}`}>{getBmiCategory(bmi).category}</p> </div> )} </div> ); };
+      const BodyMap = ({ onSelect }) => {
+          const [hovered, setHovered] = useState(null);
+          const [view, setView] = useState('front');
+
+          const muscleGroups = {
+              front: { 'Shoulders': { path: "M95,80 C80,85 75,100 80,110 L95,100 Z M155,80 C170,85 175,100 170,110 L155,100 Z" }, 'Chest': { path: "M125,85 h-20 a5,5 0 0 0 -5,5 v30 h30 v-30 a5,5 0 0 0 -5,-5 Z M125,85 h20 a5,5 0 0 1 5,5 v30 h-30 v-30 a5,5 0 0 1 5,-5 Z" }, 'Biceps': { path: "M80,115 C75,120 75,135 80,140 L90,135 L90,120 Z M170,115 C175,120 175,135 170,140 L160,135 L160,120 Z" }, 'Forearms': { path: "M80,145 L75,165 L90,165 L90,145 Z M170,145 L175,165 L160,165 L160,145 Z" }, 'Abs': { path: "M105,125 H145 V165 H105 Z" }, 'Quads': { path: "M105,170 H120 V220 H105 Z M145,170 H130 V220 H145 Z" }, 'Calves': { path: "M105,225 H120 V250 H105 Z M145,225 H130 V250 H145 Z" } },
+              back: { 'Shoulders': { path: "M95,80 C80,85 75,100 80,110 L95,100 Z M155,80 C170,85 175,100 170,110 L155,100 Z" }, 'Traps': { path: "M125,80 L140,90 L125,100 L110,90 Z" }, 'Back': { path: "M105,100 H145 V155 H105 Z" }, 'Triceps': { path: "M80,115 C75,120 75,135 80,140 L90,135 L90,120 Z M170,115 C175,120 175,135 170,140 L160,135 L160,120 Z" }, 'Glutes': { path: "M105,160 H145 V180 H105 Z" }, 'Hamstrings': { path: "M105,185 H120 V220 H105 Z M145,185 H130 V220 H145 Z" }, 'Calves': { path: "M105,225 H120 V250 H105 Z M145,225 H130 V250 H145 Z" } }
+          };
+          
+          const bodyOutline = "M125,50 C110,50 100,60 100,75 L80,110 L75,165 L105,250 L125,260 L145,250 L175,165 L170,110 L150,75 C150,60 140,50 125,50 Z";
+
+          return ( <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 mt-6 text-center relative"> <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-2">Workout Tips</h3> <div className="flex justify-center my-2"> <div className="bg-gray-200 dark:bg-gray-700 rounded-full p-1 flex"> <button onClick={() => setView('front')} className={`px-4 py-1 text-sm font-semibold rounded-full ${view === 'front' ? 'bg-teal-500 text-white' : 'text-gray-600 dark:text-gray-300'}`}>Front</button> <button onClick={() => setView('back')} className={`px-4 py-1 text-sm font-semibold rounded-full ${view === 'back' ? 'bg-teal-500 text-white' : 'text-gray-600 dark:text-gray-300'}`}>Back</button> </div> </div> <svg viewBox="50 40 150 230" className="w-full h-auto max-h-96"> <path d={bodyOutline} fill="#E2E8F0" className="dark:fill-gray-600" stroke="#CBD5E0" strokeWidth="1" /> {Object.entries(muscleGroups[view]).map(([name, { path }]) => ( <path key={name} d={path} fill={hovered === name ? "#38B2AC" : "#A0AEC0"} className="dark:fill-gray-400 dark:hover:fill-teal-400" stroke="#4A5568" strokeWidth="1.5" className="cursor-pointer transition-colors duration-200" onClick={() => onSelect(name)} onMouseEnter={() => setHovered(name)} onMouseLeave={() => setHovered(null)} /> ))} </svg> <p className="text-gray-800 dark:text-gray-200 font-semibold text-lg mt-2 h-6">{hovered || 'Select a muscle group'}</p> </div> );
+      };
+      const ExerciseItem = ({ exercise }) => {
+          return (<div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg"><h4 className="font-bold text-lg text-gray-800 dark:text-white">{exercise.name}</h4><div className="flex flex-col md:flex-row gap-4 mt-2"><div className="w-full md:w-1/2"><img src={exercise.gif} alt={`Animation of ${exercise.name}`} className="w-full h-auto object-contain rounded-md bg-white border dark:border-gray-600" /></div><div className="w-full md:w-1/2 text-gray-700 dark:text-gray-300"><p>{exercise.description}</p></div></div></div>);
+      };
+      const ExerciseListView = ({ bodyPart, onBack }) => {
+          const exercises = WORKOUT_DATA[bodyPart] || [];
+          return (<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 mt-6"><div className="flex items-center mb-4"><button onClick={onBack} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 mr-2 dark:text-white"><BackArrowIcon /></button><h3 className="font-bold text-xl text-gray-800 dark:text-white">{bodyPart} Workouts</h3></div>{exercises.length > 0 ? (<div className="space-y-4">{exercises.map((ex) => <ExerciseItem key={ex.id} exercise={ex} />)}</div>) : <p className="dark:text-white text-center">No exercises found for this muscle group.</p>}</div>);
+      };
+      const Stopwatch = () => {
+          const [time, setTime] = useState(0);
+          const [isRunning, setIsRunning] = useState(false);
+          const [laps, setLaps] = useState([]);
+          const intervalRef = useRef(null);
+          const startTimeRef = useRef(0);
+
+          useEffect(() => {
+              if (isRunning) {
+                  startTimeRef.current = Date.now() - time;
+                  intervalRef.current = setInterval(() => { setTime(Date.now() - startTimeRef.current); }, 10);
+              } else { clearInterval(intervalRef.current); }
+              return () => clearInterval(intervalRef.current);
+          }, [isRunning]);
+
+          const formatTime = (time) => { const minutes = Math.floor((time / 60000) % 60).toString().padStart(2, '0'); const seconds = Math.floor((time / 1000) % 60).toString().padStart(2, '0'); const milliseconds = Math.floor((time % 1000) / 10).toString().padStart(2, '0'); return `${minutes}:${seconds}:${milliseconds}`; };
+          const handleLap = () => { setLaps(prev => [...prev, time]); };
+          const handleReset = () => { setIsRunning(false); setTime(0); setLaps([]); };
+
+          return (
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 mt-6 text-center">
+                  <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-3">Stopwatch</h3>
+                  <p className="text-6xl font-mono font-bold text-gray-800 dark:text-white tracking-tighter my-4">{formatTime(time)}</p>
+                  <div className="flex justify-center space-x-4">
+                      <button onClick={() => setIsRunning(!isRunning)} className={`w-24 font-semibold py-2 px-4 rounded-lg transition-colors ${isRunning ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-teal-500 text-white hover:bg-teal-600'}`}>{isRunning ? 'Pause' : 'Start'}</button>
+                      <button onClick={handleLap} disabled={!isRunning && time === 0} className="w-24 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 disabled:opacity-50">Lap</button>
+                      <button onClick={handleReset} className="w-24 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500">Reset</button>
+                  </div>
+                  {laps.length > 0 && <ul className="text-left mt-4 max-h-40 overflow-y-auto">{laps.map((lap, index) => <li key={index} className="text-sm text-gray-600 dark:text-gray-400 p-1">Lap {index + 1}: {formatTime(lap)}</li>)}</ul>}
+              </div>
+          );
+      };
+       const PomodoroTimerNew = () => {
+        const MODES = { work: 25, short: 5, long: 15 };
+        const [mode, setMode] = useState('work');
+        const [totalTime, setTotalTime] = useState(MODES[mode] * 60);
+        const [timeLeft, setTimeLeft] = useState(totalTime);
+        const [isActive, setIsActive] = useState(false);
+        const timerId = useRef(null);
+
+        useEffect(() => {
+          const newTotalTime = MODES[mode] * 60;
+          setTotalTime(newTotalTime);
+          setTimeLeft(newTotalTime);
+          setIsActive(false);
+          clearInterval(timerId.current);
+        }, [mode]);
+
+        useEffect(() => {
+          if (isActive && timeLeft > 0) {
+            timerId.current = setInterval(() => setTimeLeft(prev => prev - 1), 1000);
+          } else if (timeLeft === 0 && isActive) {
+            clearInterval(timerId.current);
+            setIsActive(false);
+            if (Notification.permission === 'granted') new Notification("Pomodoro Finished!", { body: `Time for your ${mode === 'work' ? 'break' : 'next work session'}! ✨` });
+          }
+          return () => clearInterval(timerId.current);
+        }, [isActive, timeLeft, mode]);
+
+        const toggleTimer = () => setIsActive(!isActive);
+        const resetTimer = () => { setTimeLeft(totalTime); setIsActive(false); };
+        const formatTime = s => `${Math.floor(s/60).toString().padStart(2,'0')}:${(s%60).toString().padStart(2,'0')}`;
+        
+        const radius = 80;
+        const circumference = 2 * Math.PI * radius;
+        const progress = (timeLeft / totalTime) * circumference;
+
+        return (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 text-center">
+            <div className="flex justify-center space-x-2 mb-4">
+                {Object.keys(MODES).map(m => (
+                    <button key={m} onClick={() => setMode(m)} className={`px-4 py-2 text-sm font-semibold rounded-full capitalize ${mode === m ? 'bg-teal-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}>
+                        {m === 'work' ? 'Work' : m === 'short' ? 'Short Break' : 'Long Break'}
+                    </button>
+                ))}
+            </div>
+            <div className="relative w-56 h-56 mx-auto flex items-center justify-center">
+              <svg className="w-full h-full transform -rotate-90">
+                <circle cx="112" cy="112" r={radius} strokeWidth="12" className="text-gray-200 dark:text-gray-700" stroke="currentColor" fill="transparent" />
+                <circle cx="112" cy="112" r={radius} strokeWidth="12" className="text-teal-500 dark:text-teal-400" stroke="currentColor" fill="transparent"
+                  strokeDasharray={circumference}
+                  strokeDashoffset={circumference - progress}
+                  style={{ transition: 'stroke-dashoffset 0.5s linear' }}
+                />
+              </svg>
+              <div className="absolute">
+                <p className="text-5xl font-mono font-bold text-gray-800 dark:text-white tracking-tighter">{formatTime(timeLeft)}</p>
+              </div>
+            </div>
+             <div className="flex justify-center space-x-4 mt-4">
+                <button onClick={toggleTimer} className={`w-24 font-semibold py-2 px-4 rounded-lg transition-colors ${isActive ? 'bg-orange-500 text-white hover:bg-orange-600' : 'bg-teal-500 text-white hover:bg-teal-600'}`}>
+                    {isActive ? 'Pause' : 'Start'}
+                </button>
+                <button onClick={resetTimer} className="w-24 bg-gray-200 dark:bg-gray-600 text-gray-700 dark:text-gray-200 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
+                    Reset
+                </button>
+            </div>
+          </div>
+        );
+      };
+
+      // --- VIEWS / SECTIONS ---
+      const MoneyView = ({ transactions, setTransactions, lendBorrow, setLendBorrow }) => { 
+        const [view, setView] = useState('transactions'); // 'transactions', 'stats', 'lendBorrow'
+        const [displayDate, setDisplayDate] = useState(() => { const today = gregorianToNepali(new Date().toISOString().split('T')[0]); return { year: today.year, month: today.month }; });
+        const [isModalOpen, setIsModalOpen] = useState(false); 
+        const [modalInitialType, setModalInitialType] = useState('expense'); 
+        const [statsFilter, setStatsFilter] = useState('month');
+
+        const filteredTransactions = useMemo(() => {
+            const now = new Date();
+            const currentNepali = gregorianToNepali(now.toISOString().split('T')[0]);
+            let lastMonthNepaliYear = currentNepali.month === 1 ? currentNepali.year - 1 : currentNepali.year;
+            let lastMonthNepaliMonth = currentNepali.month === 1 ? 12 : currentNepali.month - 1;
+
+            if (statsFilter === 'month') {
+                return transactions.filter(t => { const d = gregorianToNepali(t.date); return d.year === currentNepali.year && d.month === currentNepali.month });
+            }
+            if (statsFilter === 'lastMonth') {
+                 return transactions.filter(t => { const d = gregorianToNepali(t.date); return d.year === lastMonthNepaliYear && d.month === lastMonthNepaliMonth });
+            }
+            return transactions; // 'all'
+        }, [transactions, statsFilter]);
+        
+        const monthlyTransactions = useMemo(() => transactions.filter(t => { const nepaliDate = gregorianToNepali(t.date); return nepaliDate.year === displayDate.year && nepaliDate.month === displayDate.month}), [transactions, displayDate]);
+        const { totalIncome, totalExpense, balance } = useMemo(() => { let i = 0, e = 0; monthlyTransactions.forEach(t => t.type === 'income' ? i += t.amount : e += t.amount); return { totalIncome: i, totalExpense: e, balance: i - e }; }, [monthlyTransactions]); 
+        const expenseByCategory = useMemo(() => { const map = {}; filteredTransactions.filter(t => t.type === 'expense').forEach(t => { if (!map[t.categoryId]) { const info = ALL_CATEGORIES[t.categoryId] || { name: 'Other', color: '#6C757D' }; map[t.categoryId] = { id: t.categoryId, name: info.name, value: 0, color: info.color }; } map[t.categoryId].value += t.amount; }); return Object.values(map).sort((a, b) => b.value - a.value); }, [filteredTransactions]); 
+        
+        const openModal = (type) => { setModalInitialType(type); setIsModalOpen(true); };
+        const addTransaction = (transaction) => { setTransactions(prev => [{ ...transaction, id: Date.now() }, ...prev]); setIsModalOpen(false); };
+        const changeMonth = (direction) => { setDisplayDate(p => { let m=p.month+direction, y=p.year; if(m>12){m=1;y++;} if(m<1){m=12;y--;} return NEPALI_MONTH_DATA[y]?{year:y,month:m}:p;}); };
+        
+        const exportToCsv = () => {
+            let csvContent = "data:text/csv;charset=utf-8,Date,Nepali Date,Type,Category,Amount,Description\n";
+            transactions.forEach(t => { const nepaliDate = gregorianToNepali(t.date); const categoryName = ALL_CATEGORIES[t.categoryId]?.name || 'N/A'; const description = t.description ? `"${t.description.replace(/"/g, '""')}"` : ''; csvContent += `${t.date},${nepaliDate.year}-${nepaliDate.month}-${nepaliDate.day},${t.type},${categoryName},${t.amount},${description}\n`; });
+            const encodedUri = encodeURI(csvContent); const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", "transactions.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link);
+        };
+
+        return (<React.Fragment><div className="mb-4 border-b border-gray-200 dark:border-gray-700"><nav className="-mb-px flex space-x-6"><button onClick={() => setView('transactions')} className={`py-2 px-1 border-b-2 font-medium text-sm ${view === 'transactions' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Transactions</button><button onClick={() => setView('stats')} className={`py-2 px-1 border-b-2 font-medium text-sm ${view === 'stats' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Stats</button><button onClick={() => setView('lendBorrow')} className={`py-2 px-1 border-b-2 font-medium text-sm ${view === 'lendBorrow' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Lend/Borrow</button></nav></div>
+            {view === 'transactions' && (<><div className="bg-gradient-to-br from-green-500 to-teal-600 text-white rounded-2xl shadow-lg p-6 mb-6"><div className="flex justify-between items-center mb-4"><div><p className="text-sm opacity-80">Total Balance</p><p className="text-4xl font-bold tracking-tight">रु {balance.toLocaleString('en-NP')}</p></div><div className="text-right"><div className="flex items-center justify-end space-x-2"><button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-white/20 text-white">&lt;</button><h2 className="text-md font-semibold text-white">{NEPALI_MONTHS[displayDate.month-1]} {displayDate.year}</h2><button onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-white/20 text-white">&gt;</button></div></div></div><div className="flex justify-between mt-6 text-sm"><div><p className="opacity-80">Income</p><p className="font-semibold">रु {totalIncome.toLocaleString('en-NP')}</p></div><div className="text-right"><p className="opacity-80">Expense</p><p className="font-semibold">रु {totalExpense.toLocaleString('en-NP')}</p></div></div></div><div className="flex space-x-4 mb-6"><button onClick={() => openModal('income')} className="flex-1 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex items-center justify-center space-x-2"><div className="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center"><PlusIcon /></div><p className="font-semibold text-gray-700 dark:text-gray-200">Income</p></button><button onClick={() => openModal('expense')} className="flex-1 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex items-center justify-center space-x-2"><div className="w-8 h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center"><MinusIcon /></div><p className="font-semibold text-gray-700 dark:text-gray-200">Expense</p></button></div><div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 mb-6"><h3 className="font-bold text-lg text-gray-800 dark:text-white mb-3 px-2">Recent Transactions</h3><div className="space-y-2 max-h-96 overflow-y-auto pr-2">{monthlyTransactions.length === 0 ? <p className="text-center text-gray-500 dark:text-gray-400 py-4">No transactions this month.</p> : monthlyTransactions.map(t => { const category = ALL_CATEGORIES[t.categoryId] || {}; const nepaliDate = gregorianToNepali(t.date); return ( <div key={t.id} className="p-2 rounded-lg flex items-center hover:bg-gray-50 dark:hover:bg-gray-700/50"><div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${t.type === 'income' ? 'bg-green-100 dark:bg-green-900/50' : 'bg-red-100 dark:bg-red-900/50'}`}>{category.Icon && <category.Icon className={`${t.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}/>}</div><div className="flex-grow"><p className="font-semibold text-gray-800 dark:text-white">{t.description || category.name}</p><p className="text-sm text-gray-500 dark:text-gray-400">{nepaliDate.day} {nepaliDate.monthName}</p></div><p className={`font-bold text-right ${t.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{t.type === 'income' ? '+' : '-'} रु {t.amount.toLocaleString('en-NP')}</p></div>)})}</div></div><div className="mt-6 text-center"><button onClick={exportToCsv} className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">Export to Excel</button></div></>
+            )}
+            {view === 'stats' && (
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4"><h2 className="text-xl font-bold text-gray-700 dark:text-white mb-4 text-center">Expense Breakdown</h2><div className="flex justify-center my-2"><div className="bg-gray-200 dark:bg-gray-700 rounded-full p-1 flex"><button onClick={() => setStatsFilter('month')} className={`px-3 py-1 text-sm rounded-full ${statsFilter==='month' ? 'bg-white dark:bg-gray-600' : ''}`}>This Month</button><button onClick={() => setStatsFilter('lastMonth')} className={`px-3 py-1 text-sm rounded-full ${statsFilter==='lastMonth' ? 'bg-white dark:bg-gray-600' : ''}`}>Last Month</button><button onClick={() => setStatsFilter('all')} className={`px-3 py-1 text-sm rounded-full ${statsFilter==='all' ? 'bg-white dark:bg-gray-600' : ''}`}>All Time</button></div></div>{expenseByCategory.length > 0 ? (<><PieChart data={expenseByCategory} /><ul className="mt-4 space-y-2">{expenseByCategory.map(cat=>(<li key={cat.id} className="flex items-center justify-between text-sm p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"><div className="flex items-center"><span className="w-3 h-3 rounded-full mr-3" style={{backgroundColor: cat.color}}></span><span className="font-medium text-gray-700 dark:text-gray-300">{cat.name}</span></div><span className="font-semibold text-gray-800 dark:text-gray-200">रु {cat.value.toLocaleString('en-NP')}</span></li>))}</ul></>) : ( <p className="text-center text-gray-500 dark:text-gray-400 py-10">No expenses recorded for this period.</p> )}</div>
+            )}
+            {view === 'lendBorrow' && <LendBorrowView lendBorrow={lendBorrow} setLendBorrow={setLendBorrow} />}
+            <AddTransactionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} addTransaction={addTransaction} initialType={modalInitialType} />
+        </React.Fragment>);
+      };
+      const LifeView = ({ todos, setTodos, toBuy, setToBuy }) => ( <React.Fragment><PomodoroTimerNew /><ToDoList todos={todos} setTodos={setTodos} /><ToBuyList toBuy={toBuy} setToBuy={setToBuy} /></React.Fragment> );
+      const GrowView = () => { 
+          const [selectedBodyPart, setSelectedBodyPart] = useState(null);
+          
+          if (selectedBodyPart) { 
+              return (<ExerciseListView bodyPart={selectedBodyPart} onBack={() => setSelectedBodyPart(null)} />);
+          }
+
+          return (<React.Fragment><BodyMap onSelect={setSelectedBodyPart} /><Stopwatch /><BMICalculator /></React.Fragment>); 
+      };
+      const AccountView = ({ settings, setSettings, clearAllData, isConfirming, setIsConfirming }) => {
+          const { name, profilePicUrl, theme } = settings;
+          const fileInputRef = useRef(null);
+
+          const handleImageClick = () => fileInputRef.current.click();
+          
+          const handleFileChange = (e) => {
+              const file = e.target.files[0];
+              if (file) {
+                  const reader = new FileReader();
+                  reader.onloadend = () => {
+                      setSettings(prev => ({ ...prev, profilePicUrl: reader.result }));
+                  };
+                  reader.readAsDataURL(file);
+              }
+          };
+          
+          const handleInputChange = (e) => {
+              const { name, value } = e.target;
+              setSettings(prev => ({ ...prev, [name]: value }));
+          };
+
+          const handleThemeChange = (e) => {
+              const newTheme = e.target.checked ? 'dark' : 'light';
+              setSettings(prev => ({ ...prev, theme: newTheme }));
+          };
+          
+          return (
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 space-y-6">
+                   <h2 className="text-xl font-bold text-gray-800 dark:text-white text-center">Settings</h2>
+                   <div className="flex flex-col items-center space-y-4">
+                      <div className="relative">
+                        <img src={profilePicUrl || `https://placehold.co/96x96/E0E7FF/4F46E5?text=${name.charAt(0)}`} alt="Profile" className="w-24 h-24 rounded-full shadow-md object-cover"/>
+                        <button onClick={handleImageClick} className="absolute -bottom-1 -right-1 bg-teal-500 text-white p-2 rounded-full hover:bg-teal-600">
+                          <EditIcon />
+                        </button>
+                        <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                      </div>
+                      <div>
+                          <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 text-center">Name</label>
+                          <input type="text" name="name" value={name} onChange={handleInputChange} placeholder="Your Name" className="mt-1 text-center text-lg font-semibold shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"/>
+                      </div>
+                   </div>
+                   <div>
+                       <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Appearance</h3>
+                       <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+                           <span className="text-gray-800 dark:text-gray-200">Dark Mode</span>
+                           <label className="relative inline-flex items-center cursor-pointer">
+                              <input type="checkbox" checked={theme === 'dark'} onChange={handleThemeChange} className="sr-only peer" />
+                              <div className="w-11 h-6 bg-gray-200 dark:bg-gray-600 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+                           </label>
+                       </div>
+                   </div>
+                   <div>
+                       <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Data Management</h3>
+                       <button onClick={() => setIsConfirming(true)} className="w-full bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors">Clear All App Data</button>
+                       {isConfirming && (
+                           <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+                               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 m-4 max-w-sm text-center">
+                                   <h4 className="font-bold text-lg text-gray-900 dark:text-white">Are you sure?</h4>
+                                   <p className="text-sm text-gray-600 dark:text-gray-300 my-2">This will permanently delete all your app data. This action cannot be undone.</p>
+                                   <div className="flex justify-center space-x-4 mt-4">
+                                       <button onClick={() => setIsConfirming(false)} className="px-4 py-2 rounded-lg bg-gray-200 dark:bg-gray-600 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-500">Cancel</button>
+                                       <button onClick={clearAllData} className="px-4 py-2 rounded-lg bg-red-500 text-white hover:bg-red-600">Yes, Clear Data</button>
+                                   </div>
+                               </div>
+                           </div>
+                       )}
+                   </div>
+              </div>
+          );
+      };
+       const LendBorrowView = ({ lendBorrow, setLendBorrow }) => {
+          const [type, setType] = useState('lend');
+          const [person, setPerson] = useState('');
+          const [amount, setAmount] = useState('');
+          const [description, setDescription] = useState('');
+          const [selectedPerson, setSelectedPerson] = useState('all');
+
+          const people = useMemo(() => [...new Set(lendBorrow.map(item => item.person))], [lendBorrow]);
+          
+          const filteredData = useMemo(() => {
+              if (selectedPerson === 'all') return lendBorrow;
+              return lendBorrow.filter(item => item.person === selectedPerson);
+          }, [lendBorrow, selectedPerson]);
+
+          const { totalLent, totalBorrowed } = useMemo(() => {
+              let lent = 0, borrowed = 0;
+              lendBorrow.forEach(item => {
+                  if(item.type === 'lend') lent += item.amount;
+                  else borrowed += item.amount;
+              });
+              return { totalLent: lent, totalBorrowed: borrowed };
+          }, [lendBorrow]);
+
+          const handleSubmit = (e) => {
+              e.preventDefault();
+              if (!person || !amount) return;
+              setLendBorrow(prev => [{
+                  id: Date.now(),
+                  type,
+                  person,
+                  amount: parseFloat(amount),
+                  description,
+                  date: new Date().toISOString()
+              }, ...prev]);
+              setPerson('');
+              setAmount('');
+              setDescription('');
+          };
+          
+          return (
+            <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4 text-center">
+                    <div className="bg-red-100 dark:bg-red-900/50 p-4 rounded-lg">
+                        <p className="text-sm text-red-800 dark:text-red-300">You Borrowed</p>
+                        <p className="text-2xl font-bold text-red-600 dark:text-red-400">रु {totalBorrowed.toLocaleString('en-NP')}</p>
+                    </div>
+                    <div className="bg-green-100 dark:bg-green-900/50 p-4 rounded-lg">
+                        <p className="text-sm text-green-800 dark:text-green-300">You Lent</p>
+                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">रु {totalLent.toLocaleString('en-NP')}</p>
+                    </div>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6">
+                     <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-4">Add New Record</h3>
+                     <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="flex gap-2">
+                           <button type="button" onClick={() => setType('lend')} className={`flex-1 py-2 rounded-lg font-semibold ${type === 'lend' ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}>Lent</button>
+                           <button type="button" onClick={() => setType('borrow')} className={`flex-1 py-2 rounded-lg font-semibold ${type === 'borrow' ? 'bg-red-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}>Borrowed</button>
+                        </div>
+                        <input type="text" list="people" value={person} onChange={e => setPerson(e.target.value)} placeholder="Person's Name" required className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                        <datalist id="people">
+                            {people.map(p => <option key={p} value={p} />)}
+                        </datalist>
+                        <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Amount (रु)" required className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                        <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optional)" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                        <button type="submit" className="w-full bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600">Add Record</button>
+                     </form>
+                </div>
+                
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-bold text-lg text-gray-800 dark:text-white">History</h3>
+                        <select value={selectedPerson} onChange={e => setSelectedPerson(e.target.value)} className="p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="all">All People</option>
+                            {people.map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                    </div>
+                    <div className="space-y-2">
+                        {filteredData.length === 0 ? <p className="text-center text-gray-500 py-4">No records yet.</p> : 
+                        [...filteredData].sort((a,b) => b.id - a.id).map(item => (
+                            <div key={item.id} className={`p-3 rounded-lg flex justify-between items-center ${item.type === 'lend' ? 'bg-green-50 dark:bg-green-900/30' : 'bg-red-50 dark:bg-red-900/30'}`}>
+                                <div>
+                                    <p className="font-semibold dark:text-white">{item.person}</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">{item.description || 'No description'}</p>
+                                </div>
+                                <p className={`font-bold ${item.type === 'lend' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                    {item.type === 'lend' ? '+' : '-'} रु {item.amount.toLocaleString('en-NP')}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+          );
+      };
+
+      // --- MAIN APP COMPONENT ---
+      const App = () => {
+          const [currentView, setCurrentView] = useState('money'); 
+          
+          const useStickyState = (defaultValue, key) => {
+              const [value, setValue] = useState(() => {
+                  try {
+                    const stickyValue = window.localStorage.getItem(key);
+                    return stickyValue !== null ? JSON.parse(stickyValue) : defaultValue;
+                  } catch (e) {
+                    return defaultValue;
+                  }
+              });
+              useEffect(() => {
+                  try {
+                    window.localStorage.setItem(key, JSON.stringify(value));
+                  } catch (error) {
+                    console.error("Could not save to localStorage", error);
+                  }
+              }, [key, value]);
+              return [value, setValue];
+          };
+
+          const [settings, setSettings] = useStickyState({ name: 'User', profilePicUrl: '', theme: 'light' }, 'lifeDashboard-settings');
+          const [transactions, setTransactions] = useStickyState([], 'lifeDashboard-transactions');
+          const [todos, setTodos] = useStickyState([], 'lifeDashboard-todos');
+          const [toBuy, setToBuy] = useStickyState([], 'lifeDashboard-toBuy');
+          const [routines, setRoutines] = useStickyState([], 'lifeDashboard-routines');
+          const [lendBorrow, setLendBorrow] = useStickyState([], 'lifeDashboard-lendBorrow');
+          const [isConfirmingClear, setIsConfirmingClear] = useState(false);
+          
+          useEffect(() => {
+              if (settings.theme === 'dark') {
+                  document.documentElement.classList.add('dark');
+              } else {
+                  document.documentElement.classList.remove('dark');
+              }
+          }, [settings.theme]);
+
+          const clearAllData = () => {
+              window.localStorage.clear();
+              window.location.reload();
+          };
+
+          return (
+              <div className="bg-gray-50 dark:bg-gray-900 min-h-screen font-sans flex flex-col">
+                  <main className="flex-grow container mx-auto p-4 pb-24">
+                      <header className="mb-6 flex items-center space-x-4">
+                           <img src={settings.profilePicUrl || `https://placehold.co/48x48/E0E7FF/4F46E5?text=${settings.name.charAt(0)}`} alt="Profile" className="w-12 h-12 rounded-full shadow-md object-cover"/>
+                          <div>
+                            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Hello, {settings.name}</h1>
+                            <p className="text-gray-500 dark:text-gray-400 text-sm"><strong>Mero Jivan</strong> by Bidur Bhattarai</p>
+                          </div>
+                      </header>
+
+                      {currentView === 'money' && <MoneyView transactions={transactions} setTransactions={setTransactions} lendBorrow={lendBorrow} setLendBorrow={setLendBorrow} />}
+                      {currentView === 'life' && <LifeView todos={todos} setTodos={setTodos} toBuy={toBuy} setToBuy={setToBuy} />}
+                      {currentView === 'grow' && <GrowView />}
+                      {currentView === 'account' && <AccountView settings={settings} setSettings={setSettings} clearAllData={clearAllData} isConfirming={isConfirmingClear} setIsConfirming={setIsConfirmingClear} />}
+                  </main>
+                  
+                  <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.2)]">
+                       <div className="container mx-auto flex justify-around items-center p-2">
+                          <button onClick={() => setCurrentView('money')} className={`p-3 rounded-full flex flex-col items-center w-20 ${currentView==='money' ? 'text-teal-600 dark:text-teal-400' : 'text-gray-500 dark:text-gray-400'}`}><MoneyIcon /><span className="text-xs mt-1">Money</span></button>
+                          <button onClick={() => setCurrentView('life')} className={`p-3 rounded-full flex flex-col items-center w-20 ${currentView==='life' ? 'text-teal-600 dark:text-teal-400' : 'text-gray-500 dark:text-gray-400'}`}><LifeIcon /><span className="text-xs mt-1">Life</span></button>
+                          <button onClick={() => setCurrentView('grow')} className={`p-3 rounded-full flex flex-col items-center w-20 ${currentView==='grow' ? 'text-teal-600 dark:text-teal-400' : 'text-gray-500 dark:text-gray-400'}`}><GrowIcon /><span className="text-xs mt-1">Grow</span></button>
+                          <button onClick={() => setCurrentView('account')} className={`p-3 rounded-full flex flex-col items-center w-20 ${currentView==='account' ? 'text-teal-600 dark:text-teal-400' : 'text-gray-500 dark:text-gray-400'}`}><AccountIcon /><span className="text-xs mt-1">Account</span></button>
+                      </div>
+                  </div>
+              </div>
+          );
+      };
+
+      ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+    </script>
+  </body>
+</html>
+
