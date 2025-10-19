@@ -4,6 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Life Dashboard</title>
+    <!-- PWA MANIFEST -->
+    <link rel="manifest" href="data:application/json;base64,eyJuYW1lIjoiTWVybyBKaXZhbiIsInNob3J0X25hbWUiOiJNZXJvIEppdmFuIiwic3RhcnRfdXJsIjoiLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwidGhlbWVfY29sb3IiOiIjMDY4OTBhIiwiaWNvbnMiOlt7InNyYyI6Imh0dHBzOi8vcGxhY2Vob2xkLmNvLzEyOHgzMjgvMDY4OTBhL0ZGRiIsInNpemVzIjoiMTI4eDEyOCJ9XX0=">
+    <meta name="theme-color" content="#06890a">
+    <!-- NOTIFICATION PERMISSION -->
+    <script>if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();</script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <!-- Tailwind CSS for styling -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- React Libraries -->
@@ -20,6 +28,30 @@
 
     <script type="text/babel">
       const { useState, useEffect, useMemo, useRef } = React;
+
+      // --- FIREBASE CONFIGURATION ---
+      const firebaseConfig = {
+        apiKey: "AIzaSyCwOVdSe_BvFgxwXd4oP6PPOuh6NrJaXNY",
+        authDomain: "mero-jivan-cd3a6.firebaseapp.com",
+        databaseURL: "https://mero-jivan-cd3a6-default-rtdb.firebaseio.com",
+        projectId: "mero-jivan-cd3a6",
+        storageBucket: "mero-jivan-cd3a6.firebasestorage.app",
+        messagingSenderId: "244728785595",
+        appId: "1:244728785595:web:dddc0a53d7cae21bbba21e",
+        measurementId: "G-3RVXWOWYTL"
+      };
+
+      // Initialize Firebase
+      let auth, database;
+      try {
+        if (!firebase.apps.length) {
+          firebase.initializeApp(firebaseConfig);
+        }
+        auth = firebase.auth();
+        database = firebase.database();
+      } catch (error) {
+        console.log('Firebase initialization failed, using local storage only');
+      }
 
       // --- ICONS (as SVG components) ---
       const MoneyIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" /></svg>);
@@ -39,6 +71,7 @@
       const GiftIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" /></svg>);
       const BackArrowIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>);
       const EditIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>);
+      const GoogleIcon = () => (<svg className="w-5 h-5" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>);
 
       // --- DATA & HELPERS ---
       const CATEGORIES = { expense: [{ id: 'food', name: 'Food', Icon: FoodIcon, color: '#FF6384' },{ id: 'transport', name: 'Transport', Icon: TransportIcon, color: '#36A2EB' },{ id: 'home', name: 'Home', Icon: OtherIcon, color: '#FFCE56' },{ id: 'bills', name: 'Bills', Icon: BillsIcon, color: '#4BC0C0' },{ id: 'shopping', name: 'Shopping', Icon: ShoppingIcon, color: '#9966FF' },{ id: 'fun', name: 'Fun', Icon: FunIcon, color: '#FF9F40' },{ id: 'health', name: 'Health', Icon: HealthIcon, color: '#E83E8C' },{ id: 'other_expense', name: 'Other', Icon: OtherIcon, color: '#6C757D' }], income: [{ id: 'salary', name: 'Salary', Icon: SalaryIcon },{ id: 'gift', name: 'Gift', Icon: GiftIcon },{ id: 'other_income', name: 'Other', Icon: OtherIcon }] };
@@ -51,39 +84,62 @@
       
       const WORKOUT_DATA = {
         'Chest': [
-          { id: 1, name: 'Push-up', description: 'A classic bodyweight exercise. Start in a plank position, lower your body until your chest nearly touches the floor, and push back up.', gif: 'https://hips.hearstapps.com/hmg-prod/images/pushup-1462808858.gif?crop=1xw:0.75xh;center,top&resize=1200:*' },
-          { id: 2, name: 'Incline Dumbbell Press', description: 'Lie on an incline bench with a dumbbell in each hand. Press the dumbbells up until your arms are fully extended.', gif: 'https://gymvisual.com/img/p/1/0/2/8/4/10284.gif' },
-          { id: 3, name: 'Dumbbell Fly', description: 'Lie on a flat bench with dumbbells. Open your arms wide, lowering the weights until they are level with your chest, then bring them back up.', gif: 'https://gymvisual.com/img/p/1/0/3/2/1/10321.gif' },
+          { id: 1, name: 'Push-up', description: 'A classic bodyweight exercise. Start in a plank position, lower your body until your chest nearly touches the floor, and push back up.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-501.gif' },
+          { id: 2, name: 'Bench Press', description: 'Lie on a flat bench with a barbell. Lower the bar to your chest, then press it back up to the starting position.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-502.gif' },
+          { id: 3, name: 'Chest Fly', description: 'Lie on a bench with dumbbells. With a slight bend in your elbows, lower the weights out to your sides until you feel a stretch.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-503.gif' },
         ],
         'Back': [
-          { id: 4, name: 'Pull-up', description: 'Grab a pull-up bar with an overhand grip. Pull your body up until your chin is over the bar, then lower back down.', gif: 'https://gymvisual.com/img/p/1/7/2/2/8/17228.gif' },
-          { id: 5, name: 'Bent-Over Row', description: 'Hold a barbell with an overhand grip, bend at your hips and knees. Pull the bar towards your waist.', gif: 'https://gymvisual.com/img/p/1/0/0/0/3/10003.gif' },
-          { id: 18, name: 'Lat Pulldown', description: 'Sit at a lat pulldown machine and grab the bar with a wide grip. Pull the bar down to your chest, squeezing your back muscles.', gif: 'https://gymvisual.com/img/p/1/3/1/2/4/13124.gif' }
+          { id: 4, name: 'Pull-up', description: 'Grab a pull-up bar with an overhand grip. Pull your body up until your chin is over the bar, then lower back down.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-504.gif' },
+          { id: 5, name: 'Bent-Over Row', description: 'Hold a barbell with an overhand grip, bend at your hips and knees. Pull the bar towards your waist.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-505.gif' },
+          { id: 18, name: 'Lat Pulldown', description: 'Sit at a lat pulldown machine and grab the bar with a wide grip. Pull the bar down to your chest, squeezing your back muscles.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-506.gif' }
         ],
         'Legs': [
-          { id: 6, name: 'Barbell Squat', description: 'Stand with your feet shoulder-width apart, barbell on your upper back. Lower your hips as if sitting in a chair, keeping your chest up.', gif: 'https://gymvisual.com/img/p/1/0/0/3/1/10031.gif' },
-          { id: 7, name: 'Lunge', description: 'Step forward with one leg and lower your hips until both knees are bent at a 90-degree angle.', gif: 'https://gymvisual.com/img/p/1/7/2/1/9/17219.gif' },
-          { id: 19, name: 'Leg Press', description: 'Sit on a leg press machine with your feet on the platform. Push the platform away by extending your knees.', gif: 'https://gymvisual.com/img/p/1/2/9/3/8/12938.gif'}
+          { id: 6, name: 'Barbell Squat', description: 'Stand with your feet shoulder-width apart, barbell on your upper back. Lower your hips as if sitting in a chair, keeping your chest up.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-507.gif' },
+          { id: 7, name: 'Lunges', description: 'Step forward with one leg and lower your hips until both knees are bent at a 90-degree angle.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-508.gif' },
+          { id: 19, name: 'Leg Press', description: 'Sit on a leg press machine with your feet on the platform. Push the platform away by extending your knees.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-509.gif'}
         ],
         'Shoulders': [
-            { id: 8, name: 'Overhead Press', description: 'Sit or stand holding dumbbells at your shoulders. Press them overhead until your arms are fully extended.', gif: 'https://gymvisual.com/img/p/1/0/2/6/1/10261.gif' },
-            { id: 20, name: 'Lateral Raise', description: 'Stand holding dumbbells at your sides. Raise your arms out to the sides until they are parallel with the floor.', gif: 'https://gymvisual.com/img/p/1/0/2/0/3/10203.gif'}
+            { id: 8, name: 'Overhead Press', description: 'Sit or stand holding dumbbells at your shoulders. Press them overhead until your arms are fully extended.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-510.gif' },
+            { id: 20, name: 'Lateral Raise', description: 'Stand holding dumbbells at your sides. Raise your arms out to the sides until they are parallel with the floor.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-511.gif'}
         ],
         'Biceps': [
-            { id: 9, name: 'Bicep Curl', description: 'Stand holding dumbbells with an underhand grip. Curl the weights toward your shoulders, squeezing your biceps.', gif: 'https://gymvisual.com/img/p/1/0/0/9/5/10095.gif' },
-             { id: 21, name: 'Hammer Curl', description: 'Stand holding dumbbells with a neutral (hammer) grip. Curl the weights up, keeping your palms facing each other.', gif: 'https://gymvisual.com/img/p/1/0/1/7/9/10179.gif'}
+            { id: 9, name: 'Bicep Curl', description: 'Stand holding dumbbells with an underhand grip. Curl the weights toward your shoulders, squeezing your biceps.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-512.gif' },
+             { id: 21, name: 'Hammer Curl', description: 'Stand holding dumbbells with a neutral (hammer) grip. Curl the weights up, keeping your palms facing each other.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-513.gif'}
         ],
         'Triceps': [
-            { id: 10, name: 'Tricep Dip', description: 'Use parallel bars or a bench. Lower your body until your elbows are at 90 degrees, then push back up.', gif: 'https://gymvisual.com/img/p/1/5/4/6/6/15466.gif' },
-            { id: 22, name: 'Skull Crusher', description: 'Lie on a bench holding an EZ bar or dumbbells above your chest. Lower the weight towards your forehead by bending your elbows.', gif: 'https://gymvisual.com/img/p/1/2/8/0/5/12805.gif' }
+            { id: 10, name: 'Tricep Dips', description: 'Use parallel bars or a bench. Lower your body until your elbows are at 90 degrees, then push back up.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-514.gif' },
+            { id: 22, name: 'Tricep Pushdown', description: 'Stand at a cable machine with a bar attachment. Push the bar down until your arms are fully extended.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-515.gif' }
         ],
         'Abs': [
-            { id: 11, name: 'Plank', description: 'Hold a push-up position with your body in a straight line from head to heels. Engage your core.', gif: 'https://gymvisual.com/img/p/1/7/2/2/6/17226.gif' },
-            { id: 12, name: 'Crunches', description: 'Lie on your back with knees bent. Lift your upper body towards your knees using your abdominal muscles.', gif: 'https://gymvisual.com/img/p/1/6/7/1/4/16714.gif' },
-            { id: 23, name: 'Leg Raises', description: 'Lie on your back and lift your legs straight up towards the ceiling until your butt lifts off the floor.', gif: 'https://gymvisual.com/img/p/1/7/1/7/2/17172.gif'}
+            { id: 11, name: 'Plank', description: 'Hold a push-up position with your body in a straight line from head to heels. Engage your core.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-516.gif' },
+            { id: 12, name: 'Crunches', description: 'Lie on your back with knees bent. Lift your upper body towards your knees using your abdominal muscles.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-517.gif' },
+            { id: 23, name: 'Leg Raises', description: 'Lie on your back and lift your legs straight up towards the ceiling until your butt lifts off the floor.', gif: 'https://www.icegif.com/wp-content/uploads/2023/03/icegif-518.gif'}
         ],
       };
 
+      // --- CLOUD SYNC FUNCTIONS ---
+      const syncDataToCloud = async (userId, data) => {
+        try {
+          if (database) {
+            await database.ref(`users/${userId}`).set(data);
+            console.log('Data synced to cloud');
+          }
+        } catch (error) {
+          console.error('Error syncing to cloud:', error);
+        }
+      };
+
+      const loadDataFromCloud = async (userId) => {
+        try {
+          if (database) {
+            const snapshot = await database.ref(`users/${userId}`).once('value');
+            return snapshot.val();
+          }
+        } catch (error) {
+          console.error('Error loading from cloud:', error);
+        }
+        return null;
+      };
 
       // --- CHILD COMPONENTS ---
       const PieChart = ({ data }) => {
@@ -91,74 +147,461 @@
           const segments = data.map((item, index) => { const percent = item.value / total; const getCoordinatesForPercent = (p) => [center + radius * Math.cos(2 * Math.PI * p), center + radius * Math.sin(2 * Math.PI * p)]; const [startX, startY] = getCoordinatesForPercent(cumulativePercent); cumulativePercent += percent; const [endX, endY] = getCoordinatesForPercent(cumulativePercent); const largeArcFlag = percent > 0.5 ? 1 : 0; const pathData = `M ${startX} ${startY} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${endX} ${endY}`; return <path key={index} d={pathData} fill="none" stroke={item.color} strokeWidth={donutThickness} />; });
           return (<div className="relative w-48 h-48 mx-auto flex items-center justify-center"><svg viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90">{segments}</svg><div className="absolute text-center"><p className="text-xs text-gray-500 dark:text-gray-400">Total Spent</p><p className="font-bold text-xl text-gray-800 dark:text-gray-200">रु {total.toLocaleString('en-NP')}</p></div></div>);
       };
-      const NepaliDatePicker = ({ gregorianDate, setGregorianDate, onClose }) => { const [currentNepaliDate, setCurrentNepaliDate] = useState(() => gregorianToNepali(gregorianDate)); const changeMonth = (delta) => { let newMonth = currentNepaliDate.month + delta; let newYear = currentNepaliDate.year; if (newMonth > 12) { newMonth = 1; newYear++; } else if (newMonth < 1) { newMonth = 12; newYear--; } if (NEPALI_MONTH_DATA[newYear]) { setCurrentNepaliDate({ year: newYear, month: newMonth, day: 1 }); } }; const daysInMonth = NEPALI_MONTH_DATA[currentNepaliDate.year]?.[currentNepaliDate.month - 1] || 30; const firstDayOfMonthGregorian = nepaliToGregorian(currentNepaliDate.year, currentNepaliDate.month, 1); const firstDayOfWeek = new Date(firstDayOfMonthGregorian).getDay(); const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1); const blanks = Array(firstDayOfWeek).fill(null); return ( <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50" onClick={onClose}> <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 w-80" onClick={e => e.stopPropagation()}> <div className="flex justify-between items-center mb-4"> <button onClick={() => changeMonth(-1)} className="font-bold text-lg p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white">&lt;</button> <div> <span className="font-bold text-lg dark:text-white">{NEPALI_MONTHS[currentNepaliDate.month - 1]}</span> <span className="text-lg ml-2 dark:text-gray-300">{currentNepaliDate.year}</span> </div> <button onClick={() => changeMonth(1)} className="font-bold text-lg p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white">&gt;</button> </div> <div className="grid grid-cols-7 gap-1 text-center text-sm"> <div className="font-semibold text-gray-500 dark:text-gray-400">Sun</div><div className="font-semibold text-gray-500 dark:text-gray-400">Mon</div><div className="font-semibold text-gray-500 dark:text-gray-400">Tue</div><div className="font-semibold text-gray-500 dark:text-gray-400">Wed</div><div className="font-semibold text-gray-500 dark:text-gray-400">Thu</div><div className="font-semibold text-gray-500 dark:text-gray-400">Fri</div><div className="font-semibold text-gray-500 dark:text-gray-400">Sat</div> {blanks.map((_, i) => <div key={`blank-${i}`}></div>)} {daysArray.map(day => { const isSelected = gregorianToNepali(gregorianDate).day === day && gregorianToNepali(gregorianDate).month === currentNepaliDate.month && gregorianToNepali(gregorianDate).year === currentNepaliDate.year; return ( <div key={day} onClick={() => { setGregorianDate(nepaliToGregorian(currentNepaliDate.year, currentNepaliDate.month, day)); onClose(); }} className={`p-2 rounded-full cursor-pointer dark:text-white ${isSelected ? 'bg-teal-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}> {day} </div> ); })} </div> </div> </div> ); };
-      const AddTransactionModal = ({ isOpen, onClose, addTransaction, initialType }) => { const [type, setType] = useState(initialType); const [amount, setAmount] = useState(''); const [description, setDescription] = useState(''); const [categoryId, setCategoryId] = useState(''); const [date, setDate] = useState(new Date().toISOString().split('T')[0]); const [isDatePickerOpen, setIsDatePickerOpen] = useState(false); useEffect(() => { setType(initialType); setAmount(''); setDescription(''); setCategoryId(CATEGORIES[initialType][0].id); }, [isOpen, initialType]); if (!isOpen) return null; const handleSubmit = (e) => { e.preventDefault(); if (!amount || !categoryId) return; addTransaction({ type, amount: parseFloat(amount), description, categoryId, date }); }; const nepaliDate = gregorianToNepali(date); return ( <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-40"> <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md m-4"> <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">{type === 'income' ? 'Add Income' : 'Add Expense'}</h2> <form onSubmit={handleSubmit}> <div className="mb-4"> <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Amount</label> <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline" placeholder="रु 0.00" required /> </div> <div className="mb-4"> <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Category</label> <div className="grid grid-cols-4 gap-2"> {CATEGORIES[type].map(cat => ( <button type="button" key={cat.id} onClick={() => setCategoryId(cat.id)} className={`p-2 rounded-lg border-2 ${categoryId === cat.id ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/50' : 'border-gray-200 dark:border-gray-600'} flex flex-col items-center text-gray-700 dark:text-gray-300`}> <cat.Icon /> <span className="text-xs mt-1">{cat.name}</span> </button> ))} </div> </div> <div className="mb-4"> <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Description</label> <input type="text" value={description} onChange={e => setDescription(e.target.value)} className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600" placeholder="e.g., Lunch with friends" /> </div> <div className="mb-6"> <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Date</label> <button type="button" onClick={() => setIsDatePickerOpen(true)} className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-left">{nepaliDate.day} {nepaliDate.monthName}, {nepaliDate.year}</button> </div> <div className="flex items-center justify-between"> <button type="button" onClick={onClose} className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-lg">Cancel</button> <button type="submit" className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg">Save</button> </div> </form> {isDatePickerOpen && <NepaliDatePicker gregorianDate={date} setGregorianDate={setDate} onClose={() => setIsDatePickerOpen(false)} />} </div> </div> ); };
+      
+      const NepaliDatePicker = ({ gregorianDate, setGregorianDate, onClose }) => { 
+        const [currentNepaliDate, setCurrentNepaliDate] = useState(() => gregorianToNepali(gregorianDate)); 
+        const changeMonth = (delta) => { 
+          let newMonth = currentNepaliDate.month + delta; 
+          let newYear = currentNepaliDate.year; 
+          if (newMonth > 12) { newMonth = 1; newYear++; } 
+          else if (newMonth < 1) { newMonth = 12; newYear--; } 
+          if (NEPALI_MONTH_DATA[newYear]) { 
+            setCurrentNepaliDate({ year: newYear, month: newMonth, day: 1 }); 
+          } 
+        }; 
+        const daysInMonth = NEPALI_MONTH_DATA[currentNepaliDate.year]?.[currentNepaliDate.month - 1] || 30; 
+        const firstDayOfMonthGregorian = nepaliToGregorian(currentNepaliDate.year, currentNepaliDate.month, 1); 
+        const firstDayOfWeek = new Date(firstDayOfMonthGregorian).getDay(); 
+        const daysArray = Array.from({ length: daysInMonth }, (_, i) => i + 1); 
+        const blanks = Array(firstDayOfWeek).fill(null); 
+        return ( 
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50" onClick={onClose}> 
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-4 w-80" onClick={e => e.stopPropagation()}> 
+              <div className="flex justify-between items-center mb-4"> 
+                <button onClick={() => changeMonth(-1)} className="font-bold text-lg p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white">&lt;</button> 
+                <div> 
+                  <span className="font-bold text-lg dark:text-white">{NEPALI_MONTHS[currentNepaliDate.month - 1]}</span> 
+                  <span className="text-lg ml-2 dark:text-gray-300">{currentNepaliDate.year}</span> 
+                </div> 
+                <button onClick={() => changeMonth(1)} className="font-bold text-lg p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-white">&gt;</button> 
+              </div> 
+              <div className="grid grid-cols-7 gap-1 text-center text-sm"> 
+                <div className="font-semibold text-gray-500 dark:text-gray-400">Sun</div>
+                <div className="font-semibold text-gray-500 dark:text-gray-400">Mon</div>
+                <div className="font-semibold text-gray-500 dark:text-gray-400">Tue</div>
+                <div className="font-semibold text-gray-500 dark:text-gray-400">Wed</div>
+                <div className="font-semibold text-gray-500 dark:text-gray-400">Thu</div>
+                <div className="font-semibold text-gray-500 dark:text-gray-400">Fri</div>
+                <div className="font-semibold text-gray-500 dark:text-gray-400">Sat</div> 
+                {blanks.map((_, i) => <div key={`blank-${i}`}></div>)} 
+                {daysArray.map(day => { 
+                  const isSelected = gregorianToNepali(gregorianDate).day === day && gregorianToNepali(gregorianDate).month === currentNepaliDate.month && gregorianToNepali(gregorianDate).year === currentNepaliDate.year; 
+                  return ( 
+                    <div key={day} onClick={() => { setGregorianDate(nepaliToGregorian(currentNepaliDate.year, currentNepaliDate.month, day)); onClose(); }} className={`p-2 rounded-full cursor-pointer dark:text-white ${isSelected ? 'bg-teal-600 text-white' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}> 
+                      {day} 
+                    </div> 
+                  ); 
+                })} 
+              </div> 
+            </div> 
+          </div> 
+        ); 
+      };
+      
+      const AddTransactionModal = ({ isOpen, onClose, addTransaction, initialType }) => { 
+        const [type, setType] = useState(initialType); 
+        const [amount, setAmount] = useState(''); 
+        const [description, setDescription] = useState(''); 
+        const [categoryId, setCategoryId] = useState(''); 
+        const [date, setDate] = useState(new Date().toISOString().split('T')[0]); 
+        const [isDatePickerOpen, setIsDatePickerOpen] = useState(false); 
+        
+        useEffect(() => { 
+          setType(initialType); 
+          setAmount(''); 
+          setDescription(''); 
+          setCategoryId(CATEGORIES[initialType][0].id); 
+        }, [isOpen, initialType]); 
+        
+        if (!isOpen) return null; 
+        
+        const handleSubmit = (e) => { 
+          e.preventDefault(); 
+          if (!amount || !categoryId) return; 
+          addTransaction({ type, amount: parseFloat(amount), description, categoryId, date }); 
+        }; 
+        
+        const nepaliDate = gregorianToNepali(date); 
+        
+        return ( 
+          <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-40"> 
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md m-4"> 
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">{type === 'income' ? 'Add Income' : 'Add Expense'}</h2> 
+              <form onSubmit={handleSubmit}> 
+                <div className="mb-4"> 
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Amount</label> 
+                  <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline" placeholder="रु 0.00" required /> 
+                </div> 
+                <div className="mb-4"> 
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Category</label> 
+                  <div className="grid grid-cols-4 gap-2"> 
+                    {CATEGORIES[type].map(cat => ( 
+                      <button type="button" key={cat.id} onClick={() => setCategoryId(cat.id)} className={`p-2 rounded-lg border-2 ${categoryId === cat.id ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/50' : 'border-gray-200 dark:border-gray-600'} flex flex-col items-center text-gray-700 dark:text-gray-300`}> 
+                        <cat.Icon /> 
+                        <span className="text-xs mt-1">{cat.name}</span> 
+                      </button> 
+                    ))} 
+                  </div> 
+                </div> 
+                <div className="mb-4"> 
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Description</label> 
+                  <input type="text" value={description} onChange={e => setDescription(e.target.value)} className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600" placeholder="e.g., Lunch with friends" /> 
+                </div> 
+                <div className="mb-6"> 
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Date</label> 
+                  <button type="button" onClick={() => setIsDatePickerOpen(true)} className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-left">{nepaliDate.day} {nepaliDate.monthName}, {nepaliDate.year}</button> 
+                </div> 
+                <div className="flex items-center justify-between"> 
+                  <button type="button" onClick={onClose} className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-lg">Cancel</button> 
+                  <button type="submit" className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg">Save</button> 
+                </div> 
+              </form> 
+              {isDatePickerOpen && <NepaliDatePicker gregorianDate={date} setGregorianDate={setDate} onClose={() => setIsDatePickerOpen(false)} />} 
+            </div> 
+          </div> 
+        ); 
+      };
+      
+      // FIXED TODO LIST - Tasks only appear in their created period
       const ToDoList = ({ todos, setTodos }) => { 
           const [newTodoText, setNewTodoText] = useState(''); 
           const [newTodoPriority, setNewTodoPriority] = useState('medium'); 
           const [activeTab, setActiveTab] = useState('today'); 
+          const [showCompleted, setShowCompleted] = useState(false);
           
+          // Filter todos based on active tab and completion status
           const filteredTodos = useMemo(() => {
-            const now = new Date();
-            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-            
-            const dayOfWeek = now.getDay(); 
-            const startOfWeek = new Date(todayStart);
-            startOfWeek.setDate(startOfWeek.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+            // Only show todos that were created for this specific period
+            let filtered = todos.filter(todo => todo.period === activeTab);
 
-            const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1); 
-            const startOfYear = new Date(now.getFullYear(), 0, 1);
-            
-            let filtered = [];
-            switch (activeTab) {
-              case 'today':
-                filtered = todos.filter(todo => new Date(todo.createdAt) >= todayStart);
-                break;
-              case 'week':
-                filtered = todos.filter(todo => new Date(todo.createdAt) >= startOfWeek);
-                break;
-              case 'month':
-                filtered = todos.filter(todo => new Date(todo.createdAt) >= startOfMonth);
-                break;
-              case 'year':
-                filtered = todos.filter(todo => new Date(todo.createdAt) >= startOfYear);
-                break;
-              default:
-                filtered = todos;
-            }
-            return filtered.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
-          }, [todos, activeTab]);
+            // Separate completed and incomplete
+            const incomplete = filtered.filter(todo => !todo.completed);
+            const completed = filtered.filter(todo => todo.completed);
 
-          const addTodo = (e) => { e.preventDefault(); if (newTodoText.trim() === '') return; setTodos(prev => [{ id: Date.now(), text: newTodoText, priority: newTodoPriority, completed: false, createdAt: new Date().toISOString() }, ...prev]); setNewTodoText(''); setNewTodoPriority('medium'); }; 
-          const toggleTodo = (id) => { setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t)); }; 
-          const deleteTodo = (id) => { setTodos(prev => prev.filter(t => t.id !== id)); }; 
-          const priorityStyles = { high: 'bg-red-500', medium: 'bg-orange-500', low: 'bg-blue-500' }; 
+            return showCompleted ? completed : incomplete;
+          }, [todos, activeTab, showCompleted]);
+
+          const addTodo = (e) => { 
+            e.preventDefault(); 
+            if (newTodoText.trim() === '') return; 
+            const newTodo = { 
+              id: Date.now(), 
+              text: newTodoText, 
+              priority: newTodoPriority, 
+              completed: false, 
+              createdAt: new Date().toISOString(),
+              period: activeTab // Store which period this task belongs to
+            };
+            setTodos(prev => [newTodo, ...prev]); 
+            setNewTodoText(''); 
+            setNewTodoPriority('medium'); 
+          }; 
+
+          const toggleTodo = (id) => { 
+            setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t)); 
+          }; 
+
+          const deleteTodo = (id) => { 
+            setTodos(prev => prev.filter(t => t.id !== id)); 
+          }; 
+
+          const priorityStyles = { 
+            high: 'bg-red-500', 
+            medium: 'bg-orange-500', 
+            low: 'bg-blue-500' 
+          }; 
+
           const TABS = ['today', 'week', 'month', 'year']; 
           
-          return ( <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 mt-6"> <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-4">To-Do List</h3> <div className="mb-4 border-b border-gray-200 dark:border-gray-700"> <nav className="-mb-px flex space-x-6"> {TABS.map(tab => ( <button key={tab} onClick={() => setActiveTab(tab)} className={`capitalize py-2 px-1 border-b-2 font-medium text-sm ${activeTab === tab ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'}`}> {tab === 'week' || tab === 'month' || tab === 'year' ? `This ${tab}` : tab} </button> ))} </nav> </div> <form onSubmit={addTodo} className="mb-4"> <input type="text" value={newTodoText} onChange={e => setNewTodoText(e.target.value)} placeholder="Add a new task..." className="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 leading-tight focus:outline-none focus:ring-2 focus:ring-teal-500 mb-2" /> <div className="flex items-center justify-between"> <div className="flex space-x-2"> {['low', 'medium', 'high'].map(p => (<button key={p} type="button" onClick={() => setNewTodoPriority(p)} className={`px-3 py-1 text-sm rounded-full capitalize border-2 ${newTodoPriority === p ? 'bg-teal-500 text-white border-teal-500' : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-500'}`}>{p}</button>))} </div> <button type="submit" className="bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600">Add</button> </div> </form> <ul className="space-y-2"> {filteredTodos.length > 0 ? filteredTodos.map(todo => ( <li key={todo.id} className="flex items-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"> <div className={`w-2 h-6 rounded-sm mr-3 ${priorityStyles[todo.priority]}`}></div> <input type="checkbox" checked={todo.completed} onChange={() => toggleTodo(todo.id)} className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-teal-600 focus:ring-teal-500 cursor-pointer bg-gray-100 dark:bg-gray-900"/> <span className={`flex-grow mx-3 ${todo.completed ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>{todo.text}</span> <button onClick={() => deleteTodo(todo.id)} className="text-gray-400 hover:text-red-500 text-sm">Delete</button> </li> )) : <p className="text-center text-gray-400 dark:text-gray-500 py-4">No tasks for this period.</p>} </ul> </div> );
+          return ( 
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 mt-6">
+              <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-4">To-Do List</h3>
+              
+              {/* Period Tabs */}
+              <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
+                <nav className="-mb-px flex space-x-6">
+                  {TABS.map(tab => (
+                    <button 
+                      key={tab} 
+                      onClick={() => setActiveTab(tab)} 
+                      className={`capitalize py-2 px-1 border-b-2 font-medium text-sm ${
+                        activeTab === tab 
+                          ? 'border-teal-500 text-teal-600 dark:text-teal-400' 
+                          : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:border-gray-300 dark:hover:border-gray-600'
+                      }`}
+                    >
+                      {tab === 'week' || tab === 'month' || tab === 'year' ? `This ${tab}` : tab}
+                    </button>
+                  ))}
+                </nav>
+              </div>
+
+              {/* Completion Toggle */}
+              <div className="flex justify-between items-center mb-4">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
+                  {filteredTodos.length} {showCompleted ? 'completed' : 'incomplete'} tasks for {activeTab}
+                </span>
+                <button 
+                  onClick={() => setShowCompleted(!showCompleted)}
+                  className={`px-3 py-1 text-sm rounded-full ${
+                    showCompleted 
+                      ? 'bg-teal-500 text-white' 
+                      : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  {showCompleted ? 'Show Incomplete' : 'Show Completed'}
+                </button>
+              </div>
+
+              {/* Add Todo Form */}
+              <form onSubmit={addTodo} className="mb-4">
+                <input 
+                  type="text" 
+                  value={newTodoText} 
+                  onChange={e => setNewTodoText(e.target.value)} 
+                  placeholder={`Add a task for ${activeTab === 'week' || activeTab === 'month' || activeTab === 'year' ? `this ${activeTab}` : activeTab}...`} 
+                  className="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 leading-tight focus:outline-none focus:ring-2 focus:ring-teal-500 mb-2" 
+                />
+                <div className="flex items-center justify-between">
+                  <div className="flex space-x-2">
+                    {['low', 'medium', 'high'].map(p => (
+                      <button 
+                        key={p} 
+                        type="button" 
+                        onClick={() => setNewTodoPriority(p)} 
+                        className={`px-3 py-1 text-sm rounded-full capitalize border-2 ${
+                          newTodoPriority === p 
+                            ? 'bg-teal-500 text-white border-teal-500' 
+                            : 'text-gray-600 dark:text-gray-300 border-gray-300 dark:border-gray-500'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                  <button type="submit" className="bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600">
+                    Add to {activeTab}
+                  </button>
+                </div>
+              </form>
+
+              {/* Todo List */}
+              <ul className="space-y-2">
+                {filteredTodos.length > 0 ? (
+                  filteredTodos.map(todo => (
+                    <li key={todo.id} className="flex items-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <div className={`w-2 h-6 rounded-sm mr-3 ${priorityStyles[todo.priority]}`}></div>
+                      <input 
+                        type="checkbox" 
+                        checked={todo.completed} 
+                        onChange={() => toggleTodo(todo.id)} 
+                        className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-teal-600 focus:ring-teal-500 cursor-pointer bg-gray-100 dark:bg-gray-900"
+                      />
+                      <span className={`flex-grow mx-3 ${todo.completed ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>
+                        {todo.text}
+                      </span>
+                      <button onClick={() => deleteTodo(todo.id)} className="text-gray-400 hover:text-red-500 text-sm">
+                        Delete
+                      </button>
+                    </li>
+                  ))
+                ) : (
+                  <p className="text-center text-gray-400 dark:text-gray-500 py-4">
+                    {showCompleted ? `No completed tasks for ${activeTab}.` : `No tasks for ${activeTab}. Add some above!`}
+                  </p>
+                )}
+              </ul>
+            </div>
+          );
       };
-      const ToBuyList = ({ toBuy, setToBuy }) => { const [newItemText, setNewItemText] = useState(''); const addItem = (e) => { e.preventDefault(); if (newItemText.trim() === '') return; setToBuy(prev => [{ id: Date.now(), text: newItemText, purchased: false }, ...prev]); setNewItemText(''); }; const toggleItem = (id) => { setToBuy(prev => prev.map(item => item.id === id ? { ...item, purchased: !item.purchased } : item)); }; const deleteItem = (id) => { setToBuy(prev => prev.filter(item => item.id !== id)); }; return ( <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 mt-6"> <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-4">To Buy List</h3> <form onSubmit={addItem} className="flex mb-4"> <input type="text" value={newItemText} onChange={e => setNewItemText(e.target.value)} placeholder="Add an item..." className="flex-grow shadow-sm appearance-none border rounded-l-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 leading-tight focus:outline-none focus:ring-2 focus:ring-teal-500" /> <button type="submit" className="bg-teal-500 text-white font-bold py-2 px-4 rounded-r-lg hover:bg-teal-600">Add</button> </form> <ul className="space-y-2"> {toBuy.length > 0 ? toBuy.map(item => ( <li key={item.id} className="flex items-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"> <input type="checkbox" checked={item.purchased} onChange={() => toggleItem(item.id)} className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-teal-600 focus:ring-teal-500 cursor-pointer bg-gray-100 dark:bg-gray-900"/> <span className={`flex-grow mx-3 ${item.purchased ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>{item.text}</span> <button onClick={() => deleteItem(item.id)} className="text-gray-400 hover:text-red-500 text-sm">Remove</button> </li> )) : <p className="text-center text-gray-400 dark:text-gray-500 py-4">Your shopping list is empty.</p>} </ul> </div> ); };
-      const BMICalculator = () => { const [height, setHeight] = useState(''); const [weight, setWeight] = useState(''); const [bmi, setBmi] = useState(null); const calculateBmi = (e) => { e.preventDefault(); const h = parseFloat(height) / 100; const w = parseFloat(weight); if (h > 0 && w > 0) { const bmiValue = w / (h * h); setBmi(bmiValue.toFixed(2)); } }; const getBmiCategory = (bmi) => { if (bmi < 18.5) return { category: 'Underweight', color: 'text-blue-500' }; if (bmi >= 18.5 && bmi <= 24.9) return { category: 'Normal weight', color: 'text-green-500' }; if (bmi >= 25 && bmi <= 29.9) return { category: 'Overweight', color: 'text-orange-500' }; return { category: 'Obesity', color: 'text-red-500' }; }; return ( <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 mt-6"> <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-4">BMI Calculator</h3> <form onSubmit={calculateBmi} className="grid grid-cols-2 gap-4 mb-4"> <div> <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Height (cm)</label> <input type="number" value={height} onChange={e => setHeight(e.target.value)} required className="mt-1 shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600" /> </div> <div> <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Weight (kg)</label> <input type="number" value={weight} onChange={e => setWeight(e.target.value)} required className="mt-1 shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600" /> </div> <div className="col-span-2"> <button type="submit" className="w-full bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600">Calculate</button> </div> </form> {bmi && ( <div className="text-center bg-gray-50 dark:bg-gray-700 p-4 rounded-lg"> <p className="text-gray-600 dark:text-gray-300">Your BMI is</p> <p className="text-4xl font-bold text-teal-600 dark:text-teal-400 my-1">{bmi}</p> <p className={`font-semibold ${getBmiCategory(bmi).color}`}>{getBmiCategory(bmi).category}</p> </div> )} </div> ); };
+
+      const ToBuyList = ({ toBuy, setToBuy }) => { 
+        const [newItemText, setNewItemText] = useState(''); 
+        const addItem = (e) => { 
+          e.preventDefault(); 
+          if (newItemText.trim() === '') return; 
+          setToBuy(prev => [{ id: Date.now(), text: newItemText, purchased: false }, ...prev]); 
+          setNewItemText(''); 
+        }; 
+        const toggleItem = (id) => { 
+          setToBuy(prev => prev.map(item => item.id === id ? { ...item, purchased: !item.purchased } : item)); 
+        }; 
+        const deleteItem = (id) => { 
+          setToBuy(prev => prev.filter(item => item.id !== id)); 
+        }; 
+        
+        return ( 
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 mt-6"> 
+            <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-4">To Buy List</h3> 
+            <form onSubmit={addItem} className="flex mb-4"> 
+              <input type="text" value={newItemText} onChange={e => setNewItemText(e.target.value)} placeholder="Add an item..." className="flex-grow shadow-sm appearance-none border rounded-l-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 leading-tight focus:outline-none focus:ring-2 focus:ring-teal-500" /> 
+              <button type="submit" className="bg-teal-500 text-white font-bold py-2 px-4 rounded-r-lg hover:bg-teal-600">Add</button> 
+            </form> 
+            <ul className="space-y-2"> 
+              {toBuy.length > 0 ? toBuy.map(item => ( 
+                <li key={item.id} className="flex items-center p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50"> 
+                  <input type="checkbox" checked={item.purchased} onChange={() => toggleItem(item.id)} className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-teal-600 focus:ring-teal-500 cursor-pointer bg-gray-100 dark:bg-gray-900"/> 
+                  <span className={`flex-grow mx-3 ${item.purchased ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'}`}>{item.text}</span> 
+                  <button onClick={() => deleteItem(item.id)} className="text-gray-400 hover:text-red-500 text-sm">Remove</button> 
+                </li> 
+              )) : <p className="text-center text-gray-400 dark:text-gray-500 py-4">Your shopping list is empty.</p>} 
+            </ul> 
+          </div> 
+        ); 
+      };
+      
+      const BMICalculator = () => { 
+        const [height, setHeight] = useState(''); 
+        const [weight, setWeight] = useState(''); 
+        const [bmi, setBmi] = useState(null); 
+        
+        const calculateBmi = (e) => { 
+          e.preventDefault(); 
+          const h = parseFloat(height) / 100; 
+          const w = parseFloat(weight); 
+          if (h > 0 && w > 0) { 
+            const bmiValue = w / (h * h); 
+            setBmi(bmiValue.toFixed(2)); 
+          } 
+        }; 
+        
+        const getBmiCategory = (bmi) => { 
+          if (bmi < 18.5) return { category: 'Underweight', color: 'text-blue-500' }; 
+          if (bmi >= 18.5 && bmi <= 24.9) return { category: 'Normal weight', color: 'text-green-500' }; 
+          if (bmi >= 25 && bmi <= 29.9) return { category: 'Overweight', color: 'text-orange-500' }; 
+          return { category: 'Obesity', color: 'text-red-500' }; 
+        }; 
+        
+        return ( 
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 mt-6"> 
+            <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-4">BMI Calculator</h3> 
+            <form onSubmit={calculateBmi} className="grid grid-cols-2 gap-4 mb-4"> 
+              <div> 
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Height (cm)</label> 
+                <input type="number" value={height} onChange={e => setHeight(e.target.value)} required className="mt-1 shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600" /> 
+              </div> 
+              <div> 
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Weight (kg)</label> 
+                <input type="number" value={weight} onChange={e => setWeight(e.target.value)} required className="mt-1 shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600" /> 
+              </div> 
+              <div className="col-span-2"> 
+                <button type="submit" className="w-full bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600">Calculate</button> 
+              </div> 
+            </form> 
+            {bmi && ( 
+              <div className="text-center bg-gray-50 dark:bg-gray-700 p-4 rounded-lg"> 
+                <p className="text-gray-600 dark:text-gray-300">Your BMI is</p> 
+                <p className="text-4xl font-bold text-teal-600 dark:text-teal-400 my-1">{bmi}</p> 
+                <p className={`font-semibold ${getBmiCategory(bmi).color}`}>{getBmiCategory(bmi).category}</p> 
+              </div> 
+            )} 
+          </div> 
+        ); 
+      };
+      
+      // IMPROVED REALISTIC BODY MAP
       const BodyMap = ({ onSelect }) => {
           const [hovered, setHovered] = useState(null);
           const [view, setView] = useState('front');
 
           const muscleGroups = {
-              front: { 'Shoulders': { path: "M95,80 C80,85 75,100 80,110 L95,100 Z M155,80 C170,85 175,100 170,110 L155,100 Z" }, 'Chest': { path: "M125,85 h-20 a5,5 0 0 0 -5,5 v30 h30 v-30 a5,5 0 0 0 -5,-5 Z M125,85 h20 a5,5 0 0 1 5,5 v30 h-30 v-30 a5,5 0 0 1 5,-5 Z" }, 'Biceps': { path: "M80,115 C75,120 75,135 80,140 L90,135 L90,120 Z M170,115 C175,120 175,135 170,140 L160,135 L160,120 Z" }, 'Forearms': { path: "M80,145 L75,165 L90,165 L90,145 Z M170,145 L175,165 L160,165 L160,145 Z" }, 'Abs': { path: "M105,125 H145 V165 H105 Z" }, 'Quads': { path: "M105,170 H120 V220 H105 Z M145,170 H130 V220 H145 Z" }, 'Calves': { path: "M105,225 H120 V250 H105 Z M145,225 H130 V250 H145 Z" } },
-              back: { 'Shoulders': { path: "M95,80 C80,85 75,100 80,110 L95,100 Z M155,80 C170,85 175,100 170,110 L155,100 Z" }, 'Traps': { path: "M125,80 L140,90 L125,100 L110,90 Z" }, 'Back': { path: "M105,100 H145 V155 H105 Z" }, 'Triceps': { path: "M80,115 C75,120 75,135 80,140 L90,135 L90,120 Z M170,115 C175,120 175,135 170,140 L160,135 L160,120 Z" }, 'Glutes': { path: "M105,160 H145 V180 H105 Z" }, 'Hamstrings': { path: "M105,185 H120 V220 H105 Z M145,185 H130 V220 H145 Z" }, 'Calves': { path: "M105,225 H120 V250 H105 Z M145,225 H130 V250 H145 Z" } }
+              front: { 
+                  'Chest': { path: "M125,85 C115,85 105,90 100,100 L100,120 C105,125 115,125 125,125 C135,125 145,125 150,120 L150,100 C145,90 135,85 125,85 Z" },
+                  'Shoulders': { path: "M95,85 C90,90 85,100 90,110 L100,105 C95,100 95,95 100,90 Z M155,85 C160,90 165,100 160,110 L150,105 C155,100 155,95 150,90 Z" },
+                  'Biceps': { path: "M105,120 C100,125 100,135 105,140 L115,135 C110,130 110,125 115,120 Z M145,120 C150,125 150,135 145,140 L135,135 C140,130 140,125 135,120 Z" },
+                  'Abs': { path: "M110,125 L115,140 L120,145 L125,147 L130,145 L135,140 L140,125 Z" },
+                  'Quads': { path: "M110,150 L115,180 L120,200 L125,205 L130,200 L135,180 L140,150 Z" }
+              },
+              back: { 
+                  'Back': { path: "M125,85 C115,85 105,90 100,100 L100,120 C105,130 115,135 125,135 C135,135 145,130 150,120 L150,100 C145,90 135,85 125,85 Z" },
+                  'Shoulders': { path: "M95,85 C90,90 85,100 90,110 L100,105 C95,100 95,95 100,90 Z M155,85 C160,90 165,100 160,110 L150,105 C155,100 155,95 150,90 Z" },
+                  'Triceps': { path: "M105,120 C100,125 100,135 105,140 L115,135 C110,130 110,125 115,120 Z M145,120 C150,125 150,135 145,140 L135,135 C140,130 140,125 135,120 Z" },
+                  'Glutes': { path: "M110,150 L115,170 L120,180 L125,185 L130,180 L135,170 L140,150 Z" },
+                  'Hamstrings': { path: "M110,180 L115,200 L120,210 L125,215 L130,210 L135,200 L140,180 Z" }
+              }
           };
           
-          const bodyOutline = "M125,50 C110,50 100,60 100,75 L80,110 L75,165 L105,250 L125,260 L145,250 L175,165 L170,110 L150,75 C150,60 140,50 125,50 Z";
+          const bodyOutline = {
+              front: "M125,50 C110,50 100,60 100,75 L90,100 L85,150 L95,220 L105,250 L125,260 L145,250 L155,220 L165,150 L160,100 L150,75 C150,60 140,50 125,50 Z",
+              back: "M125,50 C110,50 100,60 100,75 L90,100 L85,150 L95,220 L105,250 L125,260 L145,250 L155,220 L165,150 L160,100 L150,75 C150,60 140,50 125,50 Z"
+          };
 
-          return ( <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 mt-6 text-center relative"> <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-2">Workout Tips</h3> <div className="flex justify-center my-2"> <div className="bg-gray-200 dark:bg-gray-700 rounded-full p-1 flex"> <button onClick={() => setView('front')} className={`px-4 py-1 text-sm font-semibold rounded-full ${view === 'front' ? 'bg-teal-500 text-white' : 'text-gray-600 dark:text-gray-300'}`}>Front</button> <button onClick={() => setView('back')} className={`px-4 py-1 text-sm font-semibold rounded-full ${view === 'back' ? 'bg-teal-500 text-white' : 'text-gray-600 dark:text-gray-300'}`}>Back</button> </div> </div> <svg viewBox="50 40 150 230" className="w-full h-auto max-h-96"> <path d={bodyOutline} fill="#E2E8F0" className="dark:fill-gray-600" stroke="#CBD5E0" strokeWidth="1" /> {Object.entries(muscleGroups[view]).map(([name, { path }]) => ( <path key={name} d={path} fill={hovered === name ? "#38B2AC" : "#A0AEC0"} className="dark:fill-gray-400 dark:hover:fill-teal-400" stroke="#4A5568" strokeWidth="1.5" className="cursor-pointer transition-colors duration-200" onClick={() => onSelect(name)} onMouseEnter={() => setHovered(name)} onMouseLeave={() => setHovered(null)} /> ))} </svg> <p className="text-gray-800 dark:text-gray-200 font-semibold text-lg mt-2 h-6">{hovered || 'Select a muscle group'}</p> </div> );
+          return ( 
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 mt-6 text-center relative">
+              <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-2">Workout Tips</h3>
+              <div className="flex justify-center my-2">
+                <div className="bg-gray-200 dark:bg-gray-700 rounded-full p-1 flex">
+                  <button onClick={() => setView('front')} className={`px-4 py-1 text-sm font-semibold rounded-full ${view === 'front' ? 'bg-teal-500 text-white' : 'text-gray-600 dark:text-gray-300'}`}>Front</button>
+                  <button onClick={() => setView('back')} className={`px-4 py-1 text-sm font-semibold rounded-full ${view === 'back' ? 'bg-teal-500 text-white' : 'text-gray-600 dark:text-gray-300'}`}>Back</button>
+                </div>
+              </div>
+              <svg viewBox="50 40 150 230" className="w-full h-auto max-h-96">
+                <path d={bodyOutline[view]} fill="#E2E8F0" className="dark:fill-gray-600" stroke="#CBD5E0" strokeWidth="1" />
+                {Object.entries(muscleGroups[view]).map(([name, { path }]) => (
+                  <path 
+                    key={name} 
+                    d={path} 
+                    fill={hovered === name ? "#38B2AC" : "#A0AEC0"} 
+                    className="dark:fill-gray-400 dark:hover:fill-teal-400 cursor-pointer transition-colors duration-200" 
+                    stroke="#4A5568" 
+                    strokeWidth="1.5" 
+                    onClick={() => onSelect(name)}
+                    onMouseEnter={() => setHovered(name)}
+                    onMouseLeave={() => setHovered(null)}
+                  />
+                ))}
+              </svg>
+              <p className="text-gray-800 dark:text-gray-200 font-semibold text-lg mt-2 h-6">{hovered || 'Select a muscle group'}</p>
+            </div>
+          );
       };
+
       const ExerciseItem = ({ exercise }) => {
-          return (<div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg"><h4 className="font-bold text-lg text-gray-800 dark:text-white">{exercise.name}</h4><div className="flex flex-col md:flex-row gap-4 mt-2"><div className="w-full md:w-1/2"><img src={exercise.gif} alt={`Animation of ${exercise.name}`} className="w-full h-auto object-contain rounded-md bg-white border dark:border-gray-600" /></div><div className="w-full md:w-1/2 text-gray-700 dark:text-gray-300"><p>{exercise.description}</p></div></div></div>);
+          return (
+            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
+              <h4 className="font-bold text-lg text-gray-800 dark:text-white">{exercise.name}</h4>
+              <div className="flex flex-col md:flex-row gap-4 mt-2">
+                <div className="w-full md:w-1/2">
+                  <img 
+                    src={exercise.gif} 
+                    alt={`Animation of ${exercise.name}`} 
+                    className="w-full h-48 object-cover rounded-md bg-white border dark:border-gray-600"
+                    onError={(e) => {
+                      e.target.src = 'https://via.placeholder.com/300x200/4A5568/FFFFFF?text=GIF+Not+Available';
+                    }}
+                  />
+                </div>
+                <div className="w-full md:w-1/2 text-gray-700 dark:text-gray-300">
+                  <p>{exercise.description}</p>
+                </div>
+              </div>
+            </div>
+          );
       };
+
       const ExerciseListView = ({ bodyPart, onBack }) => {
           const exercises = WORKOUT_DATA[bodyPart] || [];
-          return (<div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 mt-6"><div className="flex items-center mb-4"><button onClick={onBack} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 mr-2 dark:text-white"><BackArrowIcon /></button><h3 className="font-bold text-xl text-gray-800 dark:text-white">{bodyPart} Workouts</h3></div>{exercises.length > 0 ? (<div className="space-y-4">{exercises.map((ex) => <ExerciseItem key={ex.id} exercise={ex} />)}</div>) : <p className="dark:text-white text-center">No exercises found for this muscle group.</p>}</div>);
+          return (
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 mt-6">
+              <div className="flex items-center mb-4">
+                <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 mr-2 dark:text-white">
+                  <BackArrowIcon />
+                </button>
+                <h3 className="font-bold text-xl text-gray-800 dark:text-white">{bodyPart} Workouts</h3>
+              </div>
+              {exercises.length > 0 ? (
+                <div className="space-y-4">
+                  {exercises.map((ex) => (
+                    <ExerciseItem key={ex.id} exercise={ex} />
+                  ))}
+                </div>
+              ) : (
+                <p className="dark:text-white text-center">No exercises found for this muscle group.</p>
+              )}
+            </div>
+          );
       };
+
       const Stopwatch = () => {
           const [time, setTime] = useState(0);
           const [isRunning, setIsRunning] = useState(false);
@@ -174,7 +617,13 @@
               return () => clearInterval(intervalRef.current);
           }, [isRunning]);
 
-          const formatTime = (time) => { const minutes = Math.floor((time / 60000) % 60).toString().padStart(2, '0'); const seconds = Math.floor((time / 1000) % 60).toString().padStart(2, '0'); const milliseconds = Math.floor((time % 1000) / 10).toString().padStart(2, '0'); return `${minutes}:${seconds}:${milliseconds}`; };
+          const formatTime = (time) => { 
+            const minutes = Math.floor((time / 60000) % 60).toString().padStart(2, '0'); 
+            const seconds = Math.floor((time / 1000) % 60).toString().padStart(2, '0'); 
+            const milliseconds = Math.floor((time % 1000) / 10).toString().padStart(2, '0'); 
+            return `${minutes}:${seconds}:${milliseconds}`; 
+          };
+          
           const handleLap = () => { setLaps(prev => [...prev, time]); };
           const handleReset = () => { setIsRunning(false); setTime(0); setLaps([]); };
 
@@ -191,7 +640,8 @@
               </div>
           );
       };
-       const PomodoroTimerNew = () => {
+      
+      const PomodoroTimerNew = () => {
         const MODES = { work: 25, short: 5, long: 15 };
         const [mode, setMode] = useState('work');
         const [totalTime, setTotalTime] = useState(MODES[mode] * 60);
@@ -213,7 +663,12 @@
           } else if (timeLeft === 0 && isActive) {
             clearInterval(timerId.current);
             setIsActive(false);
-            if (Notification.permission === 'granted') new Notification("Pomodoro Finished!", { body: `Time for your ${mode === 'work' ? 'break' : 'next work session'}! ✨` });
+            if (Notification.permission === 'granted') {
+                new Notification("Pomodoro Finished!", { 
+                    body: `${mode === 'work' ? 'Break time!' : 'Back to work!'} ✨`,
+                    icon: 'https://placehold.co/96x96/06890a/FFF?text=🔔'
+                });
+            }
           }
           return () => clearInterval(timerId.current);
         }, [isActive, timeLeft, mode]);
@@ -260,9 +715,57 @@
         );
       };
 
+      // FIXED AUTH COMPONENT - Working Google Sign-in
+      const AuthComponent = ({ onSignIn, onSkip }) => {
+        const [isLoading, setIsLoading] = useState(false);
+
+        const signInWithGoogle = async () => {
+          setIsLoading(true);
+          try {
+            if (auth) {
+              const provider = new firebase.auth.GoogleAuthProvider();
+              const result = await auth.signInWithPopup(provider);
+              onSignIn(result.user);
+            } else {
+              alert('Firebase auth not available. Please check your configuration.');
+            }
+          } catch (error) {
+            console.error('Error signing in:', error);
+            alert('Failed to sign in with Google: ' + error.message);
+          } finally {
+            setIsLoading(false);
+          }
+        };
+
+        return (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 w-full max-w-md m-4 text-center">
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">Welcome to Mero Jivan</h2>
+              <p className="text-gray-600 dark:text-gray-300 mb-6">Sign in to sync your data across devices</p>
+              <button
+                onClick={signInWithGoogle}
+                disabled={isLoading}
+                className="w-full bg-white border border-gray-300 rounded-lg py-3 px-4 flex items-center justify-center space-x-3 hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                <GoogleIcon />
+                <span className="text-gray-700 font-medium">
+                  {isLoading ? 'Signing in...' : 'Sign in with Google'}
+                </span>
+              </button>
+              <button
+                onClick={onSkip}
+                className="w-full mt-4 bg-teal-500 text-white rounded-lg py-3 px-4 hover:bg-teal-600 transition-colors"
+              >
+                Continue without signing in
+              </button>
+            </div>
+          </div>
+        );
+      };
+
       // --- VIEWS / SECTIONS ---
       const MoneyView = ({ transactions, setTransactions, lendBorrow, setLendBorrow }) => { 
-        const [view, setView] = useState('transactions'); // 'transactions', 'stats', 'lendBorrow'
+        const [view, setView] = useState('transactions');
         const [displayDate, setDisplayDate] = useState(() => { const today = gregorianToNepali(new Date().toISOString().split('T')[0]); return { year: today.year, month: today.month }; });
         const [isModalOpen, setIsModalOpen] = useState(false); 
         const [modalInitialType, setModalInitialType] = useState('expense'); 
@@ -280,7 +783,7 @@
             if (statsFilter === 'lastMonth') {
                  return transactions.filter(t => { const d = gregorianToNepali(t.date); return d.year === lastMonthNepaliYear && d.month === lastMonthNepaliMonth });
             }
-            return transactions; // 'all'
+            return transactions;
         }, [transactions, statsFilter]);
         
         const monthlyTransactions = useMemo(() => transactions.filter(t => { const nepaliDate = gregorianToNepali(t.date); return nepaliDate.year === displayDate.year && nepaliDate.month === displayDate.month}), [transactions, displayDate]);
@@ -288,7 +791,11 @@
         const expenseByCategory = useMemo(() => { const map = {}; filteredTransactions.filter(t => t.type === 'expense').forEach(t => { if (!map[t.categoryId]) { const info = ALL_CATEGORIES[t.categoryId] || { name: 'Other', color: '#6C757D' }; map[t.categoryId] = { id: t.categoryId, name: info.name, value: 0, color: info.color }; } map[t.categoryId].value += t.amount; }); return Object.values(map).sort((a, b) => b.value - a.value); }, [filteredTransactions]); 
         
         const openModal = (type) => { setModalInitialType(type); setIsModalOpen(true); };
-        const addTransaction = (transaction) => { setTransactions(prev => [{ ...transaction, id: Date.now() }, ...prev]); setIsModalOpen(false); };
+        const addTransaction = (transaction) => { 
+          const newTransaction = { ...transaction, id: Date.now() };
+          setTransactions(prev => [newTransaction, ...prev]); 
+          setIsModalOpen(false); 
+        };
         const changeMonth = (direction) => { setDisplayDate(p => { let m=p.month+direction, y=p.year; if(m>12){m=1;y++;} if(m<1){m=12;y--;} return NEPALI_MONTH_DATA[y]?{year:y,month:m}:p;}); };
         
         const exportToCsv = () => {
@@ -297,17 +804,137 @@
             const encodedUri = encodeURI(csvContent); const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", "transactions.csv"); document.body.appendChild(link); link.click(); document.body.removeChild(link);
         };
 
-        return (<React.Fragment><div className="mb-4 border-b border-gray-200 dark:border-gray-700"><nav className="-mb-px flex space-x-6"><button onClick={() => setView('transactions')} className={`py-2 px-1 border-b-2 font-medium text-sm ${view === 'transactions' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Transactions</button><button onClick={() => setView('stats')} className={`py-2 px-1 border-b-2 font-medium text-sm ${view === 'stats' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Stats</button><button onClick={() => setView('lendBorrow')} className={`py-2 px-1 border-b-2 font-medium text-sm ${view === 'lendBorrow' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Lend/Borrow</button></nav></div>
-            {view === 'transactions' && (<><div className="bg-gradient-to-br from-green-500 to-teal-600 text-white rounded-2xl shadow-lg p-6 mb-6"><div className="flex justify-between items-center mb-4"><div><p className="text-sm opacity-80">Total Balance</p><p className="text-4xl font-bold tracking-tight">रु {balance.toLocaleString('en-NP')}</p></div><div className="text-right"><div className="flex items-center justify-end space-x-2"><button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-white/20 text-white">&lt;</button><h2 className="text-md font-semibold text-white">{NEPALI_MONTHS[displayDate.month-1]} {displayDate.year}</h2><button onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-white/20 text-white">&gt;</button></div></div></div><div className="flex justify-between mt-6 text-sm"><div><p className="opacity-80">Income</p><p className="font-semibold">रु {totalIncome.toLocaleString('en-NP')}</p></div><div className="text-right"><p className="opacity-80">Expense</p><p className="font-semibold">रु {totalExpense.toLocaleString('en-NP')}</p></div></div></div><div className="flex space-x-4 mb-6"><button onClick={() => openModal('income')} className="flex-1 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex items-center justify-center space-x-2"><div className="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center"><PlusIcon /></div><p className="font-semibold text-gray-700 dark:text-gray-200">Income</p></button><button onClick={() => openModal('expense')} className="flex-1 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex items-center justify-center space-x-2"><div className="w-8 h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center"><MinusIcon /></div><p className="font-semibold text-gray-700 dark:text-gray-200">Expense</p></button></div><div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 mb-6"><h3 className="font-bold text-lg text-gray-800 dark:text-white mb-3 px-2">Recent Transactions</h3><div className="space-y-2 max-h-96 overflow-y-auto pr-2">{monthlyTransactions.length === 0 ? <p className="text-center text-gray-500 dark:text-gray-400 py-4">No transactions this month.</p> : monthlyTransactions.map(t => { const category = ALL_CATEGORIES[t.categoryId] || {}; const nepaliDate = gregorianToNepali(t.date); return ( <div key={t.id} className="p-2 rounded-lg flex items-center hover:bg-gray-50 dark:hover:bg-gray-700/50"><div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${t.type === 'income' ? 'bg-green-100 dark:bg-green-900/50' : 'bg-red-100 dark:bg-red-900/50'}`}>{category.Icon && <category.Icon className={`${t.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}/>}</div><div className="flex-grow"><p className="font-semibold text-gray-800 dark:text-white">{t.description || category.name}</p><p className="text-sm text-gray-500 dark:text-gray-400">{nepaliDate.day} {nepaliDate.monthName}</p></div><p className={`font-bold text-right ${t.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>{t.type === 'income' ? '+' : '-'} रु {t.amount.toLocaleString('en-NP')}</p></div>)})}</div></div><div className="mt-6 text-center"><button onClick={exportToCsv} className="bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 transition">Export to Excel</button></div></>
+        return (
+          <React.Fragment>
+            <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
+              <nav className="-mb-px flex space-x-6">
+                <button onClick={() => setView('transactions')} className={`py-2 px-1 border-b-2 font-medium text-sm ${view === 'transactions' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Transactions</button>
+                <button onClick={() => setView('stats')} className={`py-2 px-1 border-b-2 font-medium text-sm ${view === 'stats' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Stats</button>
+                <button onClick={() => setView('lendBorrow')} className={`py-2 px-1 border-b-2 font-medium text-sm ${view === 'lendBorrow' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Lend/Borrow</button>
+              </nav>
+            </div>
+
+            {view === 'transactions' && (
+              <>
+                <div className="bg-gradient-to-br from-green-500 to-teal-600 text-white rounded-2xl shadow-lg p-6 mb-6">
+                  <div className="flex justify-between items-center mb-4">
+                    <div>
+                      <p className="text-sm opacity-80">Total Balance</p>
+                      <p className="text-4xl font-bold tracking-tight">रु {balance.toLocaleString('en-NP')}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="flex items-center justify-end space-x-2">
+                        <button onClick={() => changeMonth(-1)} className="p-2 rounded-full hover:bg-white/20 text-white">&lt;</button>
+                        <h2 className="text-md font-semibold text-white">{NEPALI_MONTHS[displayDate.month-1]} {displayDate.year}</h2>
+                        <button onClick={() => changeMonth(1)} className="p-2 rounded-full hover:bg-white/20 text-white">&gt;</button>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex justify-between mt-6 text-sm">
+                    <div>
+                      <p className="opacity-80">Income</p>
+                      <p className="font-semibold">रु {totalIncome.toLocaleString('en-NP')}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="opacity-80">Expense</p>
+                      <p className="font-semibold">रु {totalExpense.toLocaleString('en-NP')}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex space-x-4 mb-6">
+                  <button onClick={() => openModal('income')} className="flex-1 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex items-center justify-center space-x-2">
+                    <div className="w-8 h-8 bg-green-100 text-green-600 rounded-full flex items-center justify-center"><PlusIcon /></div>
+                    <p className="font-semibold text-gray-700 dark:text-gray-200">Income</p>
+                  </button>
+                  <button onClick={() => openModal('expense')} className="flex-1 bg-white dark:bg-gray-800 p-4 rounded-2xl shadow-sm hover:shadow-md transition-shadow flex items-center justify-center space-x-2">
+                    <div className="w-8 h-8 bg-red-100 text-red-600 rounded-full flex items-center justify-center"><MinusIcon /></div>
+                    <p className="font-semibold text-gray-700 dark:text-gray-200">Expense</p>
+                  </button>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-4 mb-6">
+                  <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-3 px-2">Recent Transactions</h3>
+                  <div className="space-y-2 max-h-96 overflow-y-auto pr-2">
+                    {monthlyTransactions.length === 0 ? (
+                      <p className="text-center text-gray-500 dark:text-gray-400 py-4">No transactions this month.</p>
+                    ) : (
+                      monthlyTransactions.map(t => {
+                        const category = ALL_CATEGORIES[t.categoryId] || {};
+                        const nepaliDate = gregorianToNepali(t.date);
+                        return (
+                          <div key={t.id} className="p-2 rounded-lg flex items-center hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-3 ${t.type === 'income' ? 'bg-green-100 dark:bg-green-900/50' : 'bg-red-100 dark:bg-red-900/50'}`}>
+                              {category.Icon && <category.Icon className={`${t.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}/>}
+                            </div>
+                            <div className="flex-grow">
+                              <p className="font-semibold text-gray-800 dark:text-white">{t.description || category.name}</p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">{nepaliDate.day} {nepaliDate.monthName}</p>
+                            </div>
+                            <p className={`font-bold text-right ${t.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                              {t.type === 'income' ? '+' : '-'} रु {t.amount.toLocaleString('en-NP')}
+                            </p>
+                          </div>
+                        )
+                      })
+                    )}
+                  </div>
+                </div>
+
+                <div className="mt-6 text-center">
+                  <button onClick={exportToCsv} className="bg-gradient-to-r from-blue-500 to-blue-600 text-white font-bold py-2 px-6 rounded-lg hover:shadow-lg transform hover:-translate-y-0.5 transition-all flex items-center mx-auto space-x-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    <span>Export Excel</span>
+                  </button>
+                </div>
+              </>
             )}
+
             {view === 'stats' && (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4"><h2 className="text-xl font-bold text-gray-700 dark:text-white mb-4 text-center">Expense Breakdown</h2><div className="flex justify-center my-2"><div className="bg-gray-200 dark:bg-gray-700 rounded-full p-1 flex"><button onClick={() => setStatsFilter('month')} className={`px-3 py-1 text-sm rounded-full ${statsFilter==='month' ? 'bg-white dark:bg-gray-600' : ''}`}>This Month</button><button onClick={() => setStatsFilter('lastMonth')} className={`px-3 py-1 text-sm rounded-full ${statsFilter==='lastMonth' ? 'bg-white dark:bg-gray-600' : ''}`}>Last Month</button><button onClick={() => setStatsFilter('all')} className={`px-3 py-1 text-sm rounded-full ${statsFilter==='all' ? 'bg-white dark:bg-gray-600' : ''}`}>All Time</button></div></div>{expenseByCategory.length > 0 ? (<><PieChart data={expenseByCategory} /><ul className="mt-4 space-y-2">{expenseByCategory.map(cat=>(<li key={cat.id} className="flex items-center justify-between text-sm p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700"><div className="flex items-center"><span className="w-3 h-3 rounded-full mr-3" style={{backgroundColor: cat.color}}></span><span className="font-medium text-gray-700 dark:text-gray-300">{cat.name}</span></div><span className="font-semibold text-gray-800 dark:text-gray-200">रु {cat.value.toLocaleString('en-NP')}</span></li>))}</ul></>) : ( <p className="text-center text-gray-500 dark:text-gray-400 py-10">No expenses recorded for this period.</p> )}</div>
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+                <h2 className="text-xl font-bold text-gray-700 dark:text-white mb-4 text-center">Expense Breakdown</h2>
+                <div className="flex justify-center my-2">
+                  <div className="bg-gray-200 dark:bg-gray-700 rounded-full p-1 flex">
+                    <button onClick={() => setStatsFilter('month')} className={`px-3 py-1 text-sm rounded-full ${statsFilter==='month' ? 'bg-white dark:bg-gray-600' : ''}`}>This Month</button>
+                    <button onClick={() => setStatsFilter('lastMonth')} className={`px-3 py-1 text-sm rounded-full ${statsFilter==='lastMonth' ? 'bg-white dark:bg-gray-600' : ''}`}>Last Month</button>
+                    <button onClick={() => setStatsFilter('all')} className={`px-3 py-1 text-sm rounded-full ${statsFilter==='all' ? 'bg-white dark:bg-gray-600' : ''}`}>All Time</button>
+                  </div>
+                </div>
+                {expenseByCategory.length > 0 ? (
+                  <>
+                    <PieChart data={expenseByCategory} />
+                    <ul className="mt-4 space-y-2">
+                      {expenseByCategory.map(cat=>(
+                        <li key={cat.id} className="flex items-center justify-between text-sm p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700">
+                          <div className="flex items-center">
+                            <span className="w-3 h-3 rounded-full mr-3" style={{backgroundColor: cat.color}}></span>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">{cat.name}</span>
+                          </div>
+                          <span className="font-semibold text-gray-800 dark:text-gray-200">रु {cat.value.toLocaleString('en-NP')}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : (
+                  <p className="text-center text-gray-500 dark:text-gray-400 py-10">No expenses recorded for this period.</p>
+                )}
+              </div>
             )}
+
             {view === 'lendBorrow' && <LendBorrowView lendBorrow={lendBorrow} setLendBorrow={setLendBorrow} />}
             <AddTransactionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} addTransaction={addTransaction} initialType={modalInitialType} />
-        </React.Fragment>);
+          </React.Fragment>
+        );
       };
-      const LifeView = ({ todos, setTodos, toBuy, setToBuy }) => ( <React.Fragment><PomodoroTimerNew /><ToDoList todos={todos} setTodos={setTodos} /><ToBuyList toBuy={toBuy} setToBuy={setToBuy} /></React.Fragment> );
+
+      const LifeView = ({ todos, setTodos, toBuy, setToBuy }) => ( 
+        <React.Fragment>
+          <PomodoroTimerNew />
+          <ToDoList todos={todos} setTodos={setTodos} />
+          <ToBuyList toBuy={toBuy} setToBuy={setToBuy} />
+        </React.Fragment> 
+      );
+
       const GrowView = () => { 
           const [selectedBodyPart, setSelectedBodyPart] = useState(null);
           
@@ -315,11 +942,19 @@
               return (<ExerciseListView bodyPart={selectedBodyPart} onBack={() => setSelectedBodyPart(null)} />);
           }
 
-          return (<React.Fragment><BodyMap onSelect={setSelectedBodyPart} /><Stopwatch /><BMICalculator /></React.Fragment>); 
+          return (
+            <React.Fragment>
+              <BodyMap onSelect={setSelectedBodyPart} />
+              <Stopwatch />
+              <BMICalculator />
+            </React.Fragment>
+          ); 
       };
-      const AccountView = ({ settings, setSettings, clearAllData, isConfirming, setIsConfirming }) => {
+
+      const AccountView = ({ settings, setSettings, clearAllData, isConfirming, setIsConfirming, user, onSignIn, onSignOut }) => {
           const { name, profilePicUrl, theme } = settings;
           const fileInputRef = useRef(null);
+          const [showAuth, setShowAuth] = useState(false);
 
           const handleImageClick = () => fileInputRef.current.click();
           
@@ -347,9 +982,15 @@
           return (
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 space-y-6">
                    <h2 className="text-xl font-bold text-gray-800 dark:text-white text-center">Settings</h2>
+                   
+                   {/* User Info */}
                    <div className="flex flex-col items-center space-y-4">
                       <div className="relative">
-                        <img src={profilePicUrl || `https://placehold.co/96x96/E0E7FF/4F46E5?text=${name.charAt(0)}`} alt="Profile" className="w-24 h-24 rounded-full shadow-md object-cover"/>
+                        <img 
+                          src={user?.photoURL || profilePicUrl || `https://placehold.co/96x96/E0E7FF/4F46E5?text=${name.charAt(0)}`} 
+                          alt="Profile" 
+                          className="w-24 h-24 rounded-full shadow-md object-cover"
+                        />
                         <button onClick={handleImageClick} className="absolute -bottom-1 -right-1 bg-teal-500 text-white p-2 rounded-full hover:bg-teal-600">
                           <EditIcon />
                         </button>
@@ -359,7 +1000,22 @@
                           <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 text-center">Name</label>
                           <input type="text" name="name" value={name} onChange={handleInputChange} placeholder="Your Name" className="mt-1 text-center text-lg font-semibold shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"/>
                       </div>
+                      {user && user.uid !== 'local' ? (
+                        <div className="text-center">
+                          <p className="text-sm text-gray-600 dark:text-gray-400">Signed in as: {user.email}</p>
+                          <button onClick={onSignOut} className="mt-2 text-sm text-red-500 hover:text-red-600">Sign Out</button>
+                        </div>
+                      ) : (
+                        <div className="text-center">
+                          <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Not signed in</p>
+                          <button onClick={() => setShowAuth(true)} className="bg-teal-500 text-white px-4 py-2 rounded-lg hover:bg-teal-600">
+                            Sign in to sync data
+                          </button>
+                        </div>
+                      )}
                    </div>
+
+                   {/* Appearance Settings */}
                    <div>
                        <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Appearance</h3>
                        <div className="flex items-center justify-between bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
@@ -370,6 +1026,8 @@
                            </label>
                        </div>
                    </div>
+
+                   {/* Data Management */}
                    <div>
                        <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Data Management</h3>
                        <button onClick={() => setIsConfirming(true)} className="w-full bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 transition-colors">Clear All App Data</button>
@@ -386,10 +1044,19 @@
                            </div>
                        )}
                    </div>
+
+                   {/* Auth Modal */}
+                   {showAuth && (
+                     <AuthComponent 
+                       onSignIn={(user) => { onSignIn(user); setShowAuth(false); }} 
+                       onSkip={() => setShowAuth(false)}
+                     />
+                   )}
               </div>
           );
       };
-       const LendBorrowView = ({ lendBorrow, setLendBorrow }) => {
+
+      const LendBorrowView = ({ lendBorrow, setLendBorrow }) => {
           const [type, setType] = useState('lend');
           const [person, setPerson] = useState('');
           const [amount, setAmount] = useState('');
@@ -488,6 +1155,8 @@
       // --- MAIN APP COMPONENT ---
       const App = () => {
           const [currentView, setCurrentView] = useState('money'); 
+          const [user, setUser] = useState({ uid: 'local', displayName: 'User', email: 'local@user.com' });
+          const [showAuth, setShowAuth] = useState(false);
           
           const useStickyState = (defaultValue, key) => {
               const [value, setValue] = useState(() => {
@@ -516,6 +1185,42 @@
           const [lendBorrow, setLendBorrow] = useStickyState([], 'lifeDashboard-lendBorrow');
           const [isConfirmingClear, setIsConfirmingClear] = useState(false);
           
+          // Auth state listener (optional)
+          useEffect(() => {
+            if (auth) {
+              const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+                if (firebaseUser) {
+                  setUser(firebaseUser);
+                  // Load data from cloud
+                  const cloudData = await loadDataFromCloud(firebaseUser.uid);
+                  if (cloudData) {
+                    setTransactions(cloudData.transactions || []);
+                    setTodos(cloudData.todos || []);
+                    setToBuy(cloudData.toBuy || []);
+                    setLendBorrow(cloudData.lendBorrow || []);
+                    setSettings(prev => ({ ...prev, ...cloudData.settings }));
+                  }
+                }
+              });
+              return () => unsubscribe();
+            }
+          }, []);
+
+          // Sync data to cloud when user is signed in and data changes
+          useEffect(() => {
+            if (user && user.uid !== 'local' && database) {
+              const data = {
+                transactions,
+                todos,
+                toBuy,
+                lendBorrow,
+                settings,
+                lastSync: new Date().toISOString()
+              };
+              syncDataToCloud(user.uid, data);
+            }
+          }, [transactions, todos, toBuy, lendBorrow, settings, user]);
+
           useEffect(() => {
               if (settings.theme === 'dark') {
                   document.documentElement.classList.add('dark');
@@ -523,6 +1228,22 @@
                   document.documentElement.classList.remove('dark');
               }
           }, [settings.theme]);
+
+          const handleSignIn = (userData) => {
+            setUser(userData);
+            setShowAuth(false);
+          };
+
+          const handleSignOut = async () => {
+            try {
+              if (auth) {
+                await auth.signOut();
+              }
+              setUser({ uid: 'local', displayName: 'User', email: 'local@user.com' });
+            } catch (error) {
+              console.error('Error signing out:', error);
+            }
+          };
 
           const clearAllData = () => {
               window.localStorage.clear();
@@ -533,17 +1254,45 @@
               <div className="bg-gray-50 dark:bg-gray-900 min-h-screen font-sans flex flex-col">
                   <main className="flex-grow container mx-auto p-4 pb-24">
                       <header className="mb-6 flex items-center space-x-4">
-                           <img src={settings.profilePicUrl || `https://placehold.co/48x48/E0E7FF/4F46E5?text=${settings.name.charAt(0)}`} alt="Profile" className="w-12 h-12 rounded-full shadow-md object-cover"/>
+                           <img src={user.photoURL || settings.profilePicUrl || `https://placehold.co/48x48/E0E7FF/4F46E5?text=${settings.name.charAt(0)}`} alt="Profile" className="w-12 h-12 rounded-full shadow-md object-cover"/>
                           <div>
                             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Hello, {settings.name}</h1>
                             <p className="text-gray-500 dark:text-gray-400 text-sm"><strong>Mero Jivan</strong> by Bidur Bhattarai</p>
+                            {user.uid !== 'local' && (
+                              <p className="text-xs text-teal-500">✓ Cloud Sync Active</p>
+                            )}
                           </div>
                       </header>
 
-                      {currentView === 'money' && <MoneyView transactions={transactions} setTransactions={setTransactions} lendBorrow={lendBorrow} setLendBorrow={setLendBorrow} />}
-                      {currentView === 'life' && <LifeView todos={todos} setTodos={setTodos} toBuy={toBuy} setToBuy={setToBuy} />}
+                      {currentView === 'money' && (
+                        <MoneyView 
+                          transactions={transactions} 
+                          setTransactions={setTransactions} 
+                          lendBorrow={lendBorrow} 
+                          setLendBorrow={setLendBorrow}
+                        />
+                      )}
+                      {currentView === 'life' && (
+                        <LifeView 
+                          todos={todos} 
+                          setTodos={setTodos} 
+                          toBuy={toBuy} 
+                          setToBuy={setToBuy}
+                        />
+                      )}
                       {currentView === 'grow' && <GrowView />}
-                      {currentView === 'account' && <AccountView settings={settings} setSettings={setSettings} clearAllData={clearAllData} isConfirming={isConfirmingClear} setIsConfirming={setIsConfirmingClear} />}
+                      {currentView === 'account' && (
+                        <AccountView 
+                          settings={settings} 
+                          setSettings={setSettings} 
+                          clearAllData={clearAllData} 
+                          isConfirming={isConfirmingClear} 
+                          setIsConfirming={setIsConfirmingClear}
+                          user={user}
+                          onSignIn={handleSignIn}
+                          onSignOut={handleSignOut}
+                        />
+                      )}
                   </main>
                   
                   <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.2)]">
@@ -554,6 +1303,14 @@
                           <button onClick={() => setCurrentView('account')} className={`p-3 rounded-full flex flex-col items-center w-20 ${currentView==='account' ? 'text-teal-600 dark:text-teal-400' : 'text-gray-500 dark:text-gray-400'}`}><AccountIcon /><span className="text-xs mt-1">Account</span></button>
                       </div>
                   </div>
+
+                  {/* Optional Auth Modal */}
+                  {showAuth && (
+                    <AuthComponent 
+                      onSignIn={handleSignIn}
+                      onSkip={() => setShowAuth(false)}
+                    />
+                  )}
               </div>
           );
       };
@@ -562,6 +1319,3 @@
     </script>
   </body>
 </html>
-
-
-
