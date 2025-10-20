@@ -111,6 +111,7 @@
       const MovieIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" /></svg>);
       const BookIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>);
       const SyncIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>);
+      const ShareIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>);
 
       // --- DATA & HELPERS ---
       const CATEGORIES = { expense: [{ id: 'food', name: 'Food', Icon: FoodIcon, color: '#FF6384' },{ id: 'transport', name: 'Transport', Icon: TransportIcon, color: '#36A2EB' },{ id: 'home', name: 'Home', Icon: OtherIcon, color: '#FFCE56' },{ id: 'bills', name: 'Bills', Icon: BillsIcon, color: '#4BC0C0' },{ id: 'shopping', name: 'Shopping', Icon: ShoppingIcon, color: '#9966FF' },{ id: 'fun', name: 'Fun', Icon: FunIcon, color: '#FF9F40' },{ id: 'health', name: 'Health', Icon: HealthIcon, color: '#E83E8C' },{ id: 'other_expense', name: 'Other', Icon: OtherIcon, color: '#6C757D' }], income: [{ id: 'salary', name: 'Salary', Icon: SalaryIcon },{ id: 'gift', name: 'Gift', Icon: GiftIcon },{ id: 'other_income', name: 'Other', Icon: OtherIcon }] };
@@ -390,6 +391,13 @@
         const handleSetUserId = async () => {
           if (!user || !newUserId.trim()) return;
           
+          // Validate user ID format (alphanumeric, 3-20 characters)
+          const userIdRegex = /^[a-zA-Z0-9]{3,20}$/;
+          if (!userIdRegex.test(newUserId)) {
+            alert('User ID must be 3-20 characters long and contain only letters and numbers.');
+            return;
+          }
+          
           try {
             // Check if user ID is already taken
             const userRef = database.ref(`userIds/${newUserId}`);
@@ -400,14 +408,25 @@
               return;
             }
             
-            // Set user ID
-            await userRef.set(user.uid);
-            await database.ref(`users/${user.uid}/userId`).set(newUserId);
+            // Set user ID - PERMANENTLY
+            await userRef.set({
+              uid: user.uid,
+              createdAt: Date.now(),
+              displayName: user.displayName || user.email,
+              permanent: true
+            });
+            
+            await database.ref(`users/${user.uid}/userId`).set({
+              userId: newUserId,
+              setAt: Date.now(),
+              permanent: true
+            });
             
             setUserId(newUserId);
             localStorage.setItem('userId', newUserId);
             setShowUserIdModal(false);
             setNewUserId('');
+            alert('User ID set successfully! This ID is permanent and cannot be changed.');
           } catch (error) {
             console.error('Error setting user ID:', error);
             alert('Error setting User ID. Please try again.');
@@ -432,24 +451,31 @@
               <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
                 <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
                   <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-                    Set Your User ID
+                    Set Your Permanent User ID
                   </h3>
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    Choose a permanent User ID that your friends can use to find you. This can only be set once.
+                    Choose a unique User ID that your friends can use to find you. 
+                    <strong className="block mt-1 text-red-500">This can only be set once and cannot be changed!</strong>
                   </p>
-                  <input
-                    type="text"
-                    value={newUserId}
-                    onChange={(e) => setNewUserId(e.target.value)}
-                    placeholder="Enter your User ID"
-                    className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
+                  <div className="mb-4">
+                    <input
+                      type="text"
+                      value={newUserId}
+                      onChange={(e) => setNewUserId(e.target.value.replace(/[^a-zA-Z0-9]/g, ''))}
+                      placeholder="Enter your User ID"
+                      className="w-full p-3 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      maxLength="20"
+                    />
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      3-20 characters, letters and numbers only
+                    </p>
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={handleSetUserId}
                       className="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg transition-colors"
                     >
-                      Set User ID
+                      Set Permanent User ID
                     </button>
                   </div>
                 </div>
@@ -462,6 +488,11 @@
                 <div className="flex justify-between items-center h-16">
                   <div className="flex items-center">
                     <h1 className="text-xl font-bold text-gray-900 dark:text-white">Mero Jivan</h1>
+                    {userId && (
+                      <span className="ml-4 text-sm text-gray-600 dark:text-gray-400">
+                        ID: {userId}
+                      </span>
+                    )}
                     {lastSyncTime && (
                       <span className="ml-4 text-xs text-gray-500 dark:text-gray-400">
                         Last sync: {lastSyncTime}
@@ -554,7 +585,7 @@
               ) : (
                 <>
                   {activeTab === 'money' && <MoneyTab />}
-                  {activeTab === 'life' && <LifeTab />}
+                  {activeTab === 'life' && <LifeTab userId={userId} />}
                   {activeTab === 'grow' && <GrowTab />}
                   {activeTab === 'messages' && <MessagesTab userId={userId} />}
                   {activeTab === 'account' && <AccountTab userId={userId} />}
@@ -955,7 +986,7 @@
         );
       }
 
-      function LifeTab() {
+      function LifeTab({ userId }) {
         const [activeSection, setActiveSection] = useState('todo');
         const [todoLists, setTodoLists] = useState(() => JSON.parse(localStorage.getItem('todoLists') || '[]'));
         const [movies, setMovies] = useState(() => JSON.parse(localStorage.getItem('movies') || '[]'));
@@ -963,6 +994,27 @@
         const [newTodo, setNewTodo] = useState('');
         const [newMovie, setNewMovie] = useState({ title: '', type: 'watched', rating: 5 });
         const [newBook, setNewBook] = useState({ title: '', type: 'read', rating: 5 });
+        const [showShareModal, setShowShareModal] = useState(false);
+        const [shareType, setShareType] = useState('');
+        const [shareUserId, setShareUserId] = useState('');
+        const [sharedLists, setSharedLists] = useState([]);
+
+        // Load shared lists
+        useEffect(() => {
+          if (!userId || !database) return;
+
+          const sharedRef = database.ref(`sharedLists/${userId}`);
+          sharedRef.on('value', (snapshot) => {
+            const sharedData = snapshot.val() || {};
+            const sharedArray = Object.keys(sharedData).map(key => ({
+              id: key,
+              ...sharedData[key]
+            }));
+            setSharedLists(sharedArray);
+          });
+
+          return () => sharedRef.off();
+        }, [userId]);
 
         const saveTodos = (newTodos) => {
           setTodoLists(newTodos);
@@ -1038,14 +1090,123 @@
           saveBooks(updatedBooks);
         };
 
+        const shareList = async () => {
+          if (!shareUserId.trim() || !shareType) return;
+
+          try {
+            // Check if target user exists
+            const targetUserRef = database.ref(`userIds/${shareUserId}`);
+            const snapshot = await targetUserRef.once('value');
+            
+            if (!snapshot.exists()) {
+              alert('User not found! Please check the User ID.');
+              return;
+            }
+
+            const targetUserId = snapshot.val().uid;
+            const shareData = {
+              fromUserId: userId,
+              fromUserName: auth.currentUser.displayName || auth.currentUser.email,
+              type: shareType,
+              data: shareType === 'movies' ? movies : books,
+              sharedAt: Date.now(),
+              listName: shareType === 'movies' ? 'Movies/Series List' : 'Books List'
+            };
+
+            // Save to target user's shared lists
+            await database.ref(`sharedLists/${targetUserId}`).push(shareData);
+            
+            setShowShareModal(false);
+            setShareUserId('');
+            setShareType('');
+            alert(`List shared successfully with ${shareUserId}!`);
+          } catch (error) {
+            console.error('Error sharing list:', error);
+            alert('Error sharing list. Please try again.');
+          }
+        };
+
+        const removeSharedList = async (listId) => {
+          try {
+            await database.ref(`sharedLists/${userId}/${listId}`).remove();
+          } catch (error) {
+            console.error('Error removing shared list:', error);
+          }
+        };
+
         return (
           <div className="space-y-6">
+            {/* Share List Modal */}
+            {showShareModal && (
+              <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+                  <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Share List</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        List to Share
+                      </label>
+                      <select
+                        value={shareType}
+                        onChange={(e) => setShareType(e.target.value)}
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      >
+                        <option value="">Select a list</option>
+                        <option value="movies">Movies & Series</option>
+                        <option value="books">Books</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+                        Friend's User ID
+                      </label>
+                      <input
+                        type="text"
+                        value={shareUserId}
+                        onChange={(e) => setShareUserId(e.target.value)}
+                        placeholder="Enter User ID"
+                        className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                      />
+                    </div>
+                    {shareType && (
+                      <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                        <p className="text-sm text-blue-700 dark:text-blue-300">
+                          Sharing your {shareType === 'movies' ? 'Movies & Series' : 'Books'} list 
+                          ({shareType === 'movies' ? movies.length : books.length} items)
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex justify-end space-x-2 mt-6">
+                    <button
+                      onClick={() => {
+                        setShowShareModal(false);
+                        setShareUserId('');
+                        setShareType('');
+                      }}
+                      className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={shareList}
+                      disabled={!shareType || !shareUserId}
+                      className="px-4 py-2 bg-green-500 hover:bg-green-600 disabled:bg-gray-400 text-white rounded-lg transition-colors"
+                    >
+                      Share List
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Section Navigation */}
             <div className="flex space-x-4 border-b border-gray-200 dark:border-gray-700">
               {[
                 { id: 'todo', name: 'To-Do List', icon: null },
                 { id: 'movies', name: 'Movies/Series', icon: MovieIcon },
-                { id: 'books', name: 'Books', icon: BookIcon }
+                { id: 'books', name: 'Books', icon: BookIcon },
+                { id: 'shared', name: 'Shared with Me', icon: ShareIcon }
               ].map((section) => (
                 <button
                   key={section.id}
@@ -1061,6 +1222,22 @@
                 </button>
               ))}
             </div>
+
+            {/* Share Button */}
+            {(activeSection === 'movies' || activeSection === 'books') && (
+              <div className="flex justify-end">
+                <button
+                  onClick={() => {
+                    setShareType(activeSection === 'movies' ? 'movies' : 'books');
+                    setShowShareModal(true);
+                  }}
+                  className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg transition-colors flex items-center space-x-2"
+                >
+                  <ShareIcon />
+                  <span>Share List</span>
+                </button>
+              </div>
+            )}
 
             {/* To-Do List Section */}
             {activeSection === 'todo' && (
@@ -1325,6 +1502,65 @@
                 </div>
               </div>
             )}
+
+            {/* Shared Lists Section */}
+            {activeSection === 'shared' && (
+              <div className="space-y-4">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+                  <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
+                    <h4 className="font-semibold text-gray-900 dark:text-white">Shared Lists ({sharedLists.length})</h4>
+                  </div>
+                  <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {sharedLists.length === 0 ? (
+                      <div className="px-6 py-8 text-center text-gray-500 dark:text-gray-400">
+                        No shared lists yet. Friends can share their lists with you using your User ID.
+                      </div>
+                    ) : (
+                      sharedLists.map((shared) => (
+                        <div key={shared.id} className="px-6 py-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <div>
+                              <p className="font-medium text-gray-900 dark:text-white">
+                                {shared.listName} from {shared.fromUserName}
+                              </p>
+                              <p className="text-sm text-gray-500 dark:text-gray-400">
+                                Shared on {new Date(shared.sharedAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => removeSharedList(shared.id)}
+                              className="text-red-500 hover:text-red-700 transition-colors"
+                            >
+                              <DeleteIcon />
+                            </button>
+                          </div>
+                          
+                          {/* Display shared items */}
+                          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-60 overflow-y-auto">
+                              {shared.data && shared.data.map((item, index) => (
+                                <div key={index} className="p-2 bg-white dark:bg-gray-600 rounded border border-gray-200 dark:border-gray-500">
+                                  <p className="font-medium text-gray-900 dark:text-white text-sm">{item.title}</p>
+                                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                                    {shared.type === 'movies' ? (item.type === 'watched' ? 'Watched' : 'Watchlist') : (item.type === 'read' ? 'Read' : 'To Read')}
+                                    {item.rating && ` • ${'★'.repeat(item.rating)}`}
+                                  </p>
+                                </div>
+                              ))}
+                            </div>
+                            {(!shared.data || shared.data.length === 0) && (
+                              <p className="text-center text-gray-500 dark:text-gray-400 py-2 text-sm">
+                                No items in this shared list
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
       }
@@ -1373,7 +1609,7 @@
                       onClick={() => setSelectedMuscleGroup(muscleGroup)}
                       className={`p-4 rounded-lg border-2 transition-colors ${
                         selectedMuscleGroup === muscleGroup
-                          ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300'
+                          ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-900 dark:text-green-100'
                           : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                       }`}
                     >
@@ -1617,7 +1853,7 @@
               return;
             }
 
-            const targetUserId = snapshot.val();
+            const targetUserId = snapshot.val().uid;
 
             // Check if already friends or request pending
             const existingRequestRef = database.ref(`friendRequests/${targetUserId}/${userId}`);
@@ -1630,7 +1866,8 @@
 
             // Send friend request
             await existingRequestRef.set({
-              from: userId,
+              fromUserId: userId,
+              fromUserName: auth.currentUser.displayName || auth.currentUser.email,
               timestamp: Date.now(),
               status: 'pending'
             });
@@ -1645,14 +1882,21 @@
 
         const acceptFriendRequest = async (requestId, fromUserId) => {
           try {
+            // Get the from user's details
+            const fromUserRef = database.ref(`userIds/${fromUserId}`);
+            const fromUserSnapshot = await fromUserRef.once('value');
+            const fromUserData = fromUserSnapshot.val();
+
             // Add to friends list for both users
             await database.ref(`friends/${userId}/${fromUserId}`).set({
               userId: fromUserId,
+              userName: fromUserData.displayName || fromUserId,
               timestamp: Date.now()
             });
             
             await database.ref(`friends/${fromUserId}/${userId}`).set({
               userId: userId,
+              userName: auth.currentUser.displayName || userId,
               timestamp: Date.now()
             });
 
@@ -1727,10 +1971,10 @@
                   <div className="space-y-2">
                     {friendRequests.map(request => (
                       <div key={request.id} className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded">
-                        <span className="text-sm text-gray-600 dark:text-gray-300">{request.from}</span>
+                        <span className="text-sm text-gray-600 dark:text-gray-300">{request.fromUserName}</span>
                         <div className="flex space-x-1">
                           <button
-                            onClick={() => acceptFriendRequest(request.id, request.from)}
+                            onClick={() => acceptFriendRequest(request.id, request.fromUserId)}
                             className="text-green-500 hover:text-green-700 text-sm"
                           >
                             Accept
@@ -1769,9 +2013,9 @@
                       >
                         <div className="flex items-center space-x-3">
                           <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                            {friend.userId?.charAt(0).toUpperCase()}
+                            {friend.userName?.charAt(0).toUpperCase()}
                           </div>
-                          <span className="font-medium">{friend.userId}</span>
+                          <span className="font-medium">{friend.userName}</span>
                         </div>
                       </button>
                     ))
@@ -1785,7 +2029,7 @@
               {activeChat ? (
                 <>
                   <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                    <h3 className="font-semibold text-gray-900 dark:text-white">{activeChat.userId}</h3>
+                    <h3 className="font-semibold text-gray-900 dark:text-white">{activeChat.userName}</h3>
                   </div>
                   
                   <div className="flex-1 p-4 overflow-y-auto custom-scrollbar">
@@ -1856,7 +2100,7 @@
                     {userId || 'Not set'}
                   </div>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    Share this ID with friends to connect with them
+                    Share this ID with friends to connect with them. This ID is permanent and cannot be changed.
                   </p>
                 </div>
 
