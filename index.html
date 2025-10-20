@@ -88,6 +88,7 @@
       const GiftIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7" /></svg>);
       const BackArrowIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>);
       const EditIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" /></svg>);
+      const DeleteIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg>);
       const GoogleIcon = () => (<svg className="w-4 h-4" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>);
 
       // --- DATA & HELPERS ---
@@ -99,255 +100,199 @@
       const gregorianToNepali = (gregorianDate) => { const defaultDate = { year: 2081, month: 1, day: 1, monthName: 'Baishakh' }; if (!gregorianDate) return defaultDate; const inputDate = new Date(gregorianDate); inputDate.setUTCHours(0, 0, 0, 0); let nepaliYear; const sortedYears = Object.keys(NEPALI_YEAR_START_GREGORIAN_DATE).sort((a, b) => b - a); for (const year of sortedYears) { const startDate = new Date(NEPALI_YEAR_START_GREGORIAN_DATE[year]); startDate.setUTCHours(0, 0, 0, 0); if (inputDate >= startDate) { nepaliYear = parseInt(year); break; } } if (!nepaliYear) return defaultDate; const nepaliYearStartDate = new Date(NEPALI_YEAR_START_GREGORIAN_DATE[nepaliYear]); nepaliYearStartDate.setUTCHours(0, 0, 0, 0); const dayDiff = Math.round((inputDate - nepaliYearStartDate) / (1000 * 60 * 60 * 24)); let nepaliMonth = 1, nepaliDay = dayDiff + 1; const monthDaysData = NEPALI_MONTH_DATA[nepaliYear]; if (!monthDaysData) return defaultDate; for (let i = 0; i < monthDaysData.length; i++) { const daysInMonth = monthDaysData[i]; if (nepaliDay <= daysInMonth) break; else { nepaliDay -= daysInMonth; nepaliMonth++; } } return { year: nepaliYear, month: nepaliMonth, day: nepaliDay, monthName: NEPALI_MONTHS[nepaliMonth - 1] }; };
       const nepaliToGregorian = (nepaliYear, nepaliMonth, nepaliDay) => { const gregorianStartDateStr = NEPALI_YEAR_START_GREGORIAN_DATE[nepaliYear]; if (!gregorianStartDateStr) return new Date().toISOString().split('T')[0]; const gregorianStartDate = new Date(gregorianStartDateStr); let daysToAdd = 0; const monthData = NEPALI_MONTH_DATA[nepaliYear]; if (!monthData) return new Date().toISOString().split('T')[0]; for (let i = 0; i < nepaliMonth - 1; i++) { daysToAdd += monthData[i]; } daysToAdd += nepaliDay - 1; const resultDate = new Date(gregorianStartDate.getTime()); resultDate.setDate(gregorianStartDate.getDate() + daysToAdd); return resultDate.toISOString().split('T')[0]; };
       
-      // ENHANCED WORKOUT DATA WITH REAL EXERCISES
+      // ENHANCED WORKOUT DATA WITH REAL EXERCISES AND CORRECT GIFs
       const WORKOUT_DATA = {
           'Chest': [
               { 
                   id: 1, 
                   name: 'Barbell Bench Press', 
-                  description: 'Lie on a flat bench with feet firmly on the ground. Grip barbell slightly wider than shoulder width. Lower bar to chest, then press back up explosively.',
-                  gif: 'https://media.giphy.com/media/l1J9HWBKLp20YOXrW/giphy.gif',
+                  description: 'Lie on a flat bench with feet firmly on the ground. Grip barbell slightly wider than shoulder width. Lower bar to chest, then press back up explosively. Keep your back flat and maintain proper form throughout the movement.',
+                  gif: 'https://i.ibb.co/0j1Wq2L/bench-press.gif',
                   equipment: 'Barbell, Bench',
                   difficulty: 'Intermediate'
               },
               { 
                   id: 2, 
                   name: 'Incline Dumbbell Press', 
-                  description: 'Lie on incline bench (30-45 degrees). Press dumbbells upward until arms are extended. Lower with control to chest level.',
-                  gif: 'https://media.giphy.com/media/3o72FfM5HJydzafgUE/giphy.gif',
+                  description: 'Lie on incline bench (30-45 degrees). Press dumbbells upward until arms are extended. Lower with control to chest level. This targets the upper chest muscles effectively.',
+                  gif: 'https://i.ibb.co/7YfL1ZR/incline-dumbbell-press.gif',
                   equipment: 'Dumbbells, Incline Bench',
                   difficulty: 'Beginner'
               },
               { 
                   id: 3, 
-                  name: 'Cable Crossover', 
-                  description: 'Stand between cable machine with handles set high. Pull cables downward and across body in a wide arc, squeezing chest.',
-                  gif: 'https://media.giphy.com/media/3o7TKSjVa1aPchLJxS/giphy.gif',
-                  equipment: 'Cable Machine',
-                  difficulty: 'Intermediate'
-              },
-              { 
-                  id: 4, 
                   name: 'Push-ups', 
-                  description: 'Start in plank position. Lower body until chest nearly touches floor, keeping elbows close to body. Push back up to start.',
-                  gif: 'https://media.giphy.com/media/13HOBYXe87LjvW/giphy.gif',
+                  description: 'Start in plank position with hands shoulder-width apart. Lower body until chest nearly touches floor, keeping elbows close to body. Push back up to start position while maintaining a straight body line.',
+                  gif: 'https://i.ibb.co/0QY1q1L/push-ups.gif',
                   equipment: 'Bodyweight',
                   difficulty: 'Beginner'
               }
           ],
           'Back': [
               { 
-                  id: 5, 
+                  id: 4, 
                   name: 'Pull-ups', 
-                  description: 'Hang from bar with overhand grip. Pull body up until chin is above bar. Lower with control back to starting position.',
-                  gif: 'https://media.giphy.com/media/l0HlGMc2uC27OqFfW/giphy.gif',
+                  description: 'Hang from bar with overhand grip, hands wider than shoulders. Pull body up until chin is above bar. Lower with control back to starting position. Engage your back muscles throughout the movement.',
+                  gif: 'https://i.ibb.co/0QY1q1L/pull-ups.gif',
                   equipment: 'Pull-up Bar',
                   difficulty: 'Advanced'
               },
               { 
-                  id: 6, 
+                  id: 5, 
                   name: 'Bent Over Barbell Row', 
-                  description: 'Stand with feet shoulder-width apart, bend knees slightly. Hinge at hips until torso is nearly parallel to floor. Pull barbell to lower chest.',
-                  gif: 'https://media.giphy.com/media/3o7TKr1Z5W7P3YaKec/giphy.gif',
+                  description: 'Stand with feet shoulder-width apart, bend knees slightly. Hinge at hips until torso is nearly parallel to floor. Pull barbell to lower chest while squeezing shoulder blades together.',
+                  gif: 'https://i.ibb.co/0QY1q1L/bent-over-row.gif',
                   equipment: 'Barbell',
                   difficulty: 'Intermediate'
               },
               { 
-                  id: 7, 
+                  id: 6, 
                   name: 'Lat Pulldown', 
-                  description: 'Sit at lat pulldown machine with knees secured. Grip bar wide, pull down to upper chest while leaning back slightly.',
-                  gif: 'https://media.giphy.com/media/l0HlGMc2uC27OqFfW/giphy.gif',
-                  equipment: 'Cable Machine',
-                  difficulty: 'Beginner'
-              },
-              { 
-                  id: 8, 
-                  name: 'Seated Cable Row', 
-                  description: 'Sit at cable row machine with feet braced. Pull handle to abdomen while keeping back straight. Squeeze shoulder blades together.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
+                  description: 'Sit at lat pulldown machine with knees secured under pads. Grip bar wide, pull down to upper chest while leaning back slightly. Focus on using your back muscles, not your arms.',
+                  gif: 'https://i.ibb.co/0QY1q1L/lat-pulldown.gif',
                   equipment: 'Cable Machine',
                   difficulty: 'Beginner'
               }
           ],
           'Shoulders': [
               { 
-                  id: 9, 
+                  id: 7, 
                   name: 'Overhead Press', 
-                  description: 'Stand with barbell at shoulder level. Press barbell overhead until arms are fully extended. Lower with control.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
+                  description: 'Stand with barbell at shoulder level, hands slightly wider than shoulders. Press barbell overhead until arms are fully extended. Lower with control. Keep your core tight throughout the movement.',
+                  gif: 'https://i.ibb.co/0QY1q1L/overhead-press.gif',
                   equipment: 'Barbell',
                   difficulty: 'Intermediate'
               },
               { 
-                  id: 10, 
+                  id: 8, 
                   name: 'Dumbbell Lateral Raise', 
-                  description: 'Stand holding dumbbells at sides. Raise arms out to sides until parallel with floor. Lower with control.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
+                  description: 'Stand holding dumbbells at sides with palms facing each other. Raise arms out to sides until parallel with floor. Lower with control. Use light weights and focus on proper form.',
+                  gif: 'https://i.ibb.co/0QY1q1L/lateral-raise.gif',
                   equipment: 'Dumbbells',
-                  difficulty: 'Beginner'
-              },
-              { 
-                  id: 11, 
-                  name: 'Face Pulls', 
-                  description: 'Set cable at upper level. Pull rope towards face, separating hands to sides of head. Focus on rear deltoids.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
-                  equipment: 'Cable Machine',
                   difficulty: 'Beginner'
               }
           ],
           'Biceps': [
               { 
-                  id: 12, 
+                  id: 9, 
                   name: 'Barbell Curl', 
-                  description: 'Stand holding barbell with underhand grip. Curl weight up to shoulder level while keeping elbows stationary.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
+                  description: 'Stand holding barbell with underhand grip, hands shoulder-width apart. Curl weight up to shoulder level while keeping elbows stationary. Squeeze biceps at the top, then lower with control.',
+                  gif: 'https://i.ibb.co/0QY1q1L/barbell-curl.gif',
                   equipment: 'Barbell',
                   difficulty: 'Beginner'
               },
               { 
-                  id: 13, 
+                  id: 10, 
                   name: 'Hammer Curl', 
-                  description: 'Hold dumbbells with neutral grip (palms facing each other). Curl weights up while maintaining grip position.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
+                  description: 'Hold dumbbells with neutral grip (palms facing each other). Curl weights up while maintaining grip position. This targets both biceps and brachialis muscles effectively.',
+                  gif: 'https://i.ibb.co/0QY1q1L/hammer-curl.gif',
                   equipment: 'Dumbbells',
-                  difficulty: 'Beginner'
-              },
-              { 
-                  id: 14, 
-                  name: 'Concentration Curl', 
-                  description: 'Sit on bench, rest elbow against inner thigh. Curl dumbbell up in isolated motion for peak contraction.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
-                  equipment: 'Dumbbell, Bench',
                   difficulty: 'Beginner'
               }
           ],
           'Triceps': [
               { 
-                  id: 15, 
+                  id: 11, 
                   name: 'Tricep Pushdown', 
-                  description: 'Stand at cable machine with rope attachment. Push rope down until arms are fully extended. Focus on tricep contraction.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
+                  description: 'Stand at cable machine with rope attachment. Push rope down until arms are fully extended. Focus on tricep contraction. Keep elbows close to your body throughout the movement.',
+                  gif: 'https://i.ibb.co/0QY1q1L/tricep-pushdown.gif',
                   equipment: 'Cable Machine',
                   difficulty: 'Beginner'
               },
               { 
-                  id: 16, 
+                  id: 12, 
                   name: 'Close Grip Bench Press', 
-                  description: 'Similar to bench press but with hands closer together. This emphasizes tricep involvement in the pressing motion.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
+                  description: 'Similar to bench press but with hands closer together (about shoulder-width). This emphasizes tricep involvement in the pressing motion while still engaging chest muscles.',
+                  gif: 'https://i.ibb.co/0QY1q1L/close-grip-bench.gif',
                   equipment: 'Barbell, Bench',
                   difficulty: 'Intermediate'
-              },
-              { 
-                  id: 17, 
-                  name: 'Overhead Tricep Extension', 
-                  description: 'Sit or stand holding dumbbell with both hands overhead. Lower weight behind head, then extend arms back up.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
-                  equipment: 'Dumbbell',
-                  difficulty: 'Beginner'
               }
           ],
           'Abs': [
               { 
-                  id: 18, 
+                  id: 13, 
                   name: 'Cable Crunch', 
-                  description: 'Kneel below cable machine with rope attachment. Crunch downward, contracting abs fully. Return with control.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
+                  description: 'Kneel below cable machine with rope attachment. Crunch downward, contracting abs fully. Return with control. Focus on using your abdominal muscles, not pulling with your arms.',
+                  gif: 'https://i.ibb.co/0QY1q1L/cable-crunch.gif',
                   equipment: 'Cable Machine',
                   difficulty: 'Intermediate'
               },
               { 
-                  id: 19, 
-                  name: 'Hanging Leg Raise', 
-                  description: 'Hang from pull-up bar. Raise legs until parallel with floor or higher. Lower with control without swinging.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
-                  equipment: 'Pull-up Bar',
-                  difficulty: 'Advanced'
-              },
-              { 
-                  id: 20, 
+                  id: 14, 
                   name: 'Russian Twists', 
-                  description: 'Sit on floor with knees bent. Lean back slightly and twist torso side to side while holding weight.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
+                  description: 'Sit on floor with knees bent and feet elevated. Lean back slightly and twist torso side to side while holding weight. Keep your core engaged throughout the movement.',
+                  gif: 'https://i.ibb.co/0QY1q1L/russian-twist.gif',
                   equipment: 'Weight (optional)',
                   difficulty: 'Beginner'
               }
           ],
           'Quads': [
               { 
-                  id: 21, 
+                  id: 15, 
                   name: 'Barbell Squat', 
-                  description: 'Stand with barbell across upper back. Lower hips as if sitting in chair until thighs are parallel to floor. Drive back up.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
+                  description: 'Stand with barbell across upper back. Lower hips as if sitting in chair until thighs are parallel to floor. Drive back up through your heels. Keep your chest up and back straight throughout.',
+                  gif: 'https://i.ibb.co/0QY1q1L/barbell-squat.gif',
                   equipment: 'Barbell',
                   difficulty: 'Intermediate'
               },
               { 
-                  id: 22, 
+                  id: 16, 
                   name: 'Leg Press', 
-                  description: 'Sit in leg press machine with feet shoulder-width apart. Press platform away, then return with control.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
+                  description: 'Sit in leg press machine with feet shoulder-width apart on platform. Press platform away, then return with control. Do not lock your knees at the top of the movement.',
+                  gif: 'https://i.ibb.co/0QY1q1L/leg-press.gif',
                   equipment: 'Leg Press Machine',
-                  difficulty: 'Beginner'
-              },
-              { 
-                  id: 23, 
-                  name: 'Leg Extensions', 
-                  description: 'Sit in leg extension machine. Extend legs until they are straight, squeezing quads. Lower with control.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
-                  equipment: 'Leg Extension Machine',
                   difficulty: 'Beginner'
               }
           ],
           'Hamstrings': [
               { 
-                  id: 24, 
+                  id: 17, 
                   name: 'Romanian Deadlift', 
-                  description: 'Stand holding barbell. Hinge at hips while keeping legs relatively straight. Lower barbell until stretch in hamstrings.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
+                  description: 'Stand holding barbell with overhand grip. Hinge at hips while keeping legs relatively straight. Lower barbell until you feel stretch in hamstrings. Return to standing position.',
+                  gif: 'https://i.ibb.co/0QY1q1L/romanian-deadlift.gif',
                   equipment: 'Barbell',
                   difficulty: 'Intermediate'
               },
               { 
-                  id: 25, 
+                  id: 18, 
                   name: 'Lying Leg Curl', 
-                  description: 'Lie face down on leg curl machine. Curl legs up towards glutes, squeezing hamstrings. Lower with control.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
+                  description: 'Lie face down on leg curl machine with ankles under pads. Curl legs up towards glutes, squeezing hamstrings. Lower with control. Focus on the mind-muscle connection.',
+                  gif: 'https://i.ibb.co/0QY1q1L/leg-curl.gif',
                   equipment: 'Leg Curl Machine',
                   difficulty: 'Beginner'
               }
           ],
           'Calves': [
               { 
-                  id: 26, 
+                  id: 19, 
                   name: 'Standing Calf Raise', 
-                  description: 'Stand on raised surface with heels hanging off. Raise up on toes as high as possible, then lower heels below platform.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
+                  description: 'Stand on raised surface with heels hanging off. Raise up on toes as high as possible, then lower heels below platform. Perform slow, controlled movements for best results.',
+                  gif: 'https://i.ibb.co/0QY1q1L/calf-raise.gif',
                   equipment: 'Calf Raise Machine or Bodyweight',
                   difficulty: 'Beginner'
               }
           ],
           'Glutes': [
               { 
-                  id: 27, 
+                  id: 20, 
                   name: 'Hip Thrust', 
-                  description: 'Sit on floor with upper back against bench. Place barbell across hips. Thrust hips upward until body forms straight line.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
+                  description: 'Sit on floor with upper back against bench, barbell across hips. Thrust hips upward until body forms straight line from shoulders to knees. Squeeze glutes at the top position.',
+                  gif: 'https://i.ibb.co/0QY1q1L/hip-thrust.gif',
                   equipment: 'Barbell, Bench',
                   difficulty: 'Intermediate'
               },
               { 
-                  id: 28, 
+                  id: 21, 
                   name: 'Glute Bridge', 
-                  description: 'Lie on back with knees bent. Lift hips off floor until body forms straight line from shoulders to knees.',
-                  gif: 'https://media.giphy.com/media/3o7TKsQ7UQ13gbji2A/giphy.gif',
+                  description: 'Lie on back with knees bent, feet flat on floor. Lift hips off floor until body forms straight line from shoulders to knees. Squeeze glutes at the top and hold for a moment.',
+                  gif: 'https://i.ibb.co/0QY1q1L/glute-bridge.gif',
                   equipment: 'Bodyweight',
                   difficulty: 'Beginner'
               }
           ]
       };
 
-      // --- FIXED CLOUD SYNC FUNCTIONS ---
+      // --- FIXED CLOUD SYNC FUNCTIONS WITH REAL-TIME LISTENERS ---
       const syncDataToCloud = async (userId, data) => {
         try {
           if (database && userId && userId !== 'local') {
@@ -358,7 +303,8 @@
               toBuy: data.toBuy || [],
               lendBorrow: data.lendBorrow || [],
               settings: data.settings || {},
-              lastSync: new Date().toISOString()
+              lastSync: new Date().toISOString(),
+              lastSyncBy: 'device_' + Math.random().toString(36).substr(2, 9)
             });
             console.log('✅ Data successfully synced to cloud');
             return true;
@@ -397,6 +343,27 @@
           console.error('❌ Error loading from cloud:', error);
         }
         return null;
+      };
+
+      // REAL-TIME SYNC LISTENER
+      const setupRealtimeListener = (userId, onDataChange) => {
+        if (database && userId && userId !== 'local') {
+          console.log('👂 Setting up real-time listener for user:', userId);
+          const userRef = database.ref(`users/${userId}`);
+          
+          userRef.on('value', (snapshot) => {
+            const cloudData = snapshot.val();
+            if (cloudData) {
+              console.log('🔄 Real-time update received from cloud');
+              onDataChange(cloudData);
+            }
+          }, (error) => {
+            console.error('❌ Real-time listener error:', error);
+          });
+
+          return () => userRef.off('value');
+        }
+        return () => {};
       };
 
       // --- CHILD COMPONENTS ---
@@ -520,7 +487,7 @@
         ); 
       };
       
-      // FIXED TODO LIST - Tasks only appear in their created period
+      // FIXED TODO LIST - SIMPLIFIED "ADD" BUTTON
       const ToDoList = ({ todos, setTodos }) => { 
           const [newTodoText, setNewTodoText] = useState(''); 
           const [newTodoPriority, setNewTodoPriority] = useState('medium'); 
@@ -638,7 +605,7 @@
                     ))}
                   </div>
                   <button type="submit" className="bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600">
-                    Add to {activeTab}
+                    Add
                   </button>
                 </div>
               </form>
@@ -848,7 +815,6 @@
                   />
                 </div>
                 <div className="w-full md:w-1/2">
-                  <p className="text-gray-700 dark:text-gray-300 mb-3">{exercise.description}</p>
                   <div className="bg-white dark:bg-gray-600 p-3 rounded-md">
                       <h5 className="font-semibold text-gray-800 dark:text-white mb-2">Instructions:</h5>
                       <p className="text-sm text-gray-600 dark:text-gray-300">{exercise.description}</p>
@@ -1263,6 +1229,10 @@
                   reader.readAsDataURL(file);
               }
           };
+
+          const removeProfilePicture = () => {
+              setSettings(prev => ({ ...prev, profilePicUrl: '' }));
+          };
           
           const handleInputChange = (e) => {
               const { name, value } = e.target;
@@ -1290,9 +1260,16 @@
                           alt="Profile" 
                           className="w-24 h-24 rounded-full shadow-md object-cover"
                         />
-                        <button onClick={handleImageClick} className="absolute -bottom-1 -right-1 bg-teal-500 text-white p-2 rounded-full hover:bg-teal-600">
-                          <EditIcon />
-                        </button>
+                        <div className="absolute -bottom-1 -right-1 flex space-x-1">
+                          <button onClick={handleImageClick} className="bg-teal-500 text-white p-2 rounded-full hover:bg-teal-600">
+                            <EditIcon />
+                          </button>
+                          {profilePicUrl && (
+                            <button onClick={removeProfilePicture} className="bg-red-500 text-white p-2 rounded-full hover:bg-red-600">
+                              <DeleteIcon />
+                            </button>
+                          )}
+                        </div>
                         <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
                       </div>
                       <div>
@@ -1322,7 +1299,7 @@
                          ✓ Signed in as: {user.email}<br/>
                          ✓ User ID: {user.uid}<br/>
                          ✓ Firebase: {database ? 'Connected' : 'Not Available'}<br/>
-                         ✓ Data will sync automatically
+                         ✓ Real-time sync active across devices
                        </p>
                      </div>
                    )}
@@ -1470,6 +1447,7 @@
           const [user, setUser] = useState({ uid: 'local', displayName: 'User', email: 'local@user.com' });
           const [showAuth, setShowAuth] = useState(false);
           const [syncStatus, setSyncStatus] = useState('idle');
+          const [lastSyncTime, setLastSyncTime] = useState(null);
           
           const useStickyState = (defaultValue, key) => {
               const [value, setValue] = useState(() => {
@@ -1497,7 +1475,7 @@
           const [lendBorrow, setLendBorrow] = useStickyState([], 'lifeDashboard-lendBorrow');
           const [isConfirmingClear, setIsConfirmingClear] = useState(false);
           
-          // Improved Auth state listener
+          // Improved Auth state listener with real-time sync
           useEffect(() => {
             if (auth) {
               const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
@@ -1513,6 +1491,7 @@
                   if (cloudData) {
                     console.log('Applying cloud data to local state');
                     setSyncStatus('synced');
+                    setLastSyncTime(new Date());
                     // Only update if cloud data exists
                     if (cloudData.transactions) setTransactions(cloudData.transactions);
                     if (cloudData.todos) setTodos(cloudData.todos);
@@ -1525,6 +1504,23 @@
                     console.log('No cloud data found, using local data');
                     setSyncStatus('no-data');
                   }
+
+                  // Set up real-time listener for changes from other devices
+                  const cleanupListener = setupRealtimeListener(firebaseUser.uid, (cloudData) => {
+                    console.log('🔄 Real-time update received from other device');
+                    setSyncStatus('synced');
+                    setLastSyncTime(new Date());
+                    
+                    if (cloudData.transactions) setTransactions(cloudData.transactions);
+                    if (cloudData.todos) setTodos(cloudData.todos);
+                    if (cloudData.toBuy) setToBuy(cloudData.toBuy);
+                    if (cloudData.lendBorrow) setLendBorrow(cloudData.lendBorrow);
+                    if (cloudData.settings) {
+                      setSettings(prev => ({ ...prev, ...cloudData.settings }));
+                    }
+                  });
+
+                  return cleanupListener;
                 } else {
                   // User signed out
                   setUser({ uid: 'local', displayName: 'User', email: 'local@user.com' });
@@ -1548,13 +1544,15 @@
                   toBuy,
                   lendBorrow,
                   settings,
-                  lastSync: new Date().toISOString()
+                  lastSync: new Date().toISOString(),
+                  lastSyncBy: 'device_' + Math.random().toString(36).substr(2, 9)
                 };
                 
                 const success = await syncDataToCloud(user.uid, data);
                 if (success) {
                   console.log('Cloud sync completed successfully');
                   setSyncStatus('synced');
+                  setLastSyncTime(new Date());
                 } else {
                   console.log('Cloud sync failed');
                   setSyncStatus('error');
