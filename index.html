@@ -49,8 +49,9 @@
         }
         auth = firebase.auth();
         database = firebase.database();
+        console.log('Firebase initialized successfully');
       } catch (error) {
-        console.log('Firebase initialization failed, using local storage only');
+        console.error('Firebase initialization failed:', error);
       }
 
       // --- ICONS (as SVG components) ---
@@ -330,26 +331,54 @@
           ]
       };
 
-      // --- CLOUD SYNC FUNCTIONS ---
+      // --- FIXED CLOUD SYNC FUNCTIONS ---
       const syncDataToCloud = async (userId, data) => {
         try {
-          if (database) {
-            await database.ref(`users/${userId}`).set(data);
-            console.log('Data synced to cloud');
+          if (database && userId && userId !== 'local') {
+            console.log('🔄 Syncing data to cloud for user:', userId);
+            await database.ref(`users/${userId}`).set({
+              transactions: data.transactions || [],
+              todos: data.todos || [],
+              toBuy: data.toBuy || [],
+              lendBorrow: data.lendBorrow || [],
+              settings: data.settings || {},
+              lastSync: new Date().toISOString()
+            });
+            console.log('✅ Data successfully synced to cloud');
+            return true;
+          } else {
+            console.log('⏭️ Cloud sync skipped - no database or local user');
+            return false;
           }
         } catch (error) {
-          console.error('Error syncing to cloud:', error);
+          console.error('❌ Error syncing to cloud:', error);
+          return false;
         }
       };
 
       const loadDataFromCloud = async (userId) => {
         try {
-          if (database) {
+          if (database && userId && userId !== 'local') {
+            console.log('📥 Loading data from cloud for user:', userId);
             const snapshot = await database.ref(`users/${userId}`).once('value');
-            return snapshot.val();
+            const cloudData = snapshot.val();
+            
+            if (cloudData) {
+              console.log('✅ Cloud data loaded successfully');
+              return {
+                transactions: cloudData.transactions || [],
+                todos: cloudData.todos || [],
+                toBuy: cloudData.toBuy || [],
+                lendBorrow: cloudData.lendBorrow || [],
+                settings: cloudData.settings || {}
+              };
+            } else {
+              console.log('ℹ️ No cloud data found for user');
+              return null;
+            }
           }
         } catch (error) {
-          console.error('Error loading from cloud:', error);
+          console.error('❌ Error loading from cloud:', error);
         }
         return null;
       };
@@ -1011,9 +1040,10 @@
             if (auth) {
               const provider = new firebase.auth.GoogleAuthProvider();
               const result = await auth.signInWithPopup(provider);
+              console.log('Google sign-in successful:', result.user);
               onSignIn(result.user);
             } else {
-              // Fallback to test user if Firebase is not available
+              console.log('Firebase auth not available, using test mode');
               const testUser = {
                 uid: 'test-user-' + Date.now(),
                 displayName: 'Test User',
@@ -1025,7 +1055,6 @@
           } catch (error) {
             console.error('Error signing in:', error);
             alert('Firebase not configured. Using test mode.');
-            // Fallback to test user
             const testUser = {
               uid: 'test-user-' + Date.now(),
               displayName: 'Test User',
@@ -1316,6 +1345,19 @@
                       )}
                    </div>
 
+                   {/* Cloud Sync Status */}
+                   {user.uid !== 'local' && (
+                     <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                       <h4 className="font-semibold text-blue-800 dark:text-blue-300 mb-2">Cloud Sync Status</h4>
+                       <p className="text-sm text-blue-700 dark:text-blue-400">
+                         ✓ Signed in as: {user.email}<br/>
+                         ✓ User ID: {user.uid}<br/>
+                         ✓ Firebase: {database ? 'Connected' : 'Not Available'}<br/>
+                         ✓ Data will sync automatically
+                       </p>
+                     </div>
+                   )}
+
                    {/* Appearance Settings */}
                    <div>
                        <h3 className="font-semibold text-gray-700 dark:text-gray-300 mb-2">Appearance</h3>
@@ -1458,6 +1500,7 @@
           const [currentView, setCurrentView] = useState('money'); 
           const [user, setUser] = useState({ uid: 'local', displayName: 'User', email: 'local@user.com' });
           const [showAuth, setShowAuth] = useState(false);
+          const [syncStatus, setSyncStatus] = useState('idle');
           
           const useStickyState = (defaultValue, key) => {
               const [value, setValue] = useState(() => {
@@ -1482,25 +1525,42 @@
           const [transactions, setTransactions] = useStickyState([], 'lifeDashboard-transactions');
           const [todos, setTodos] = useStickyState([], 'lifeDashboard-todos');
           const [toBuy, setToBuy] = useStickyState([], 'lifeDashboard-toBuy');
-          const [routines, setRoutines] = useStickyState([], 'lifeDashboard-routines');
           const [lendBorrow, setLendBorrow] = useStickyState([], 'lifeDashboard-lendBorrow');
           const [isConfirmingClear, setIsConfirmingClear] = useState(false);
           
-          // Auth state listener (optional)
+          // Improved Auth state listener
           useEffect(() => {
             if (auth) {
               const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+                console.log('Auth state changed:', firebaseUser);
+                
                 if (firebaseUser) {
                   setUser(firebaseUser);
+                  console.log('User signed in, loading cloud data...');
+                  setSyncStatus('loading');
+                  
                   // Load data from cloud
                   const cloudData = await loadDataFromCloud(firebaseUser.uid);
                   if (cloudData) {
-                    setTransactions(cloudData.transactions || []);
-                    setTodos(cloudData.todos || []);
-                    setToBuy(cloudData.toBuy || []);
-                    setLendBorrow(cloudData.lendBorrow || []);
-                    setSettings(prev => ({ ...prev, ...cloudData.settings }));
+                    console.log('Applying cloud data to local state');
+                    setSyncStatus('synced');
+                    // Only update if cloud data exists
+                    if (cloudData.transactions) setTransactions(cloudData.transactions);
+                    if (cloudData.todos) setTodos(cloudData.todos);
+                    if (cloudData.toBuy) setToBuy(cloudData.toBuy);
+                    if (cloudData.lendBorrow) setLendBorrow(cloudData.lendBorrow);
+                    if (cloudData.settings) {
+                      setSettings(prev => ({ ...prev, ...cloudData.settings }));
+                    }
+                  } else {
+                    console.log('No cloud data found, using local data');
+                    setSyncStatus('no-data');
                   }
+                } else {
+                  // User signed out
+                  setUser({ uid: 'local', displayName: 'User', email: 'local@user.com' });
+                  console.log('User signed out, using local storage');
+                  setSyncStatus('local');
                 }
               });
               return () => unsubscribe();
@@ -1509,17 +1569,33 @@
 
           // Sync data to cloud when user is signed in and data changes
           useEffect(() => {
-            if (user && user.uid !== 'local' && database) {
-              const data = {
-                transactions,
-                todos,
-                toBuy,
-                lendBorrow,
-                settings,
-                lastSync: new Date().toISOString()
-              };
-              syncDataToCloud(user.uid, data);
-            }
+            const syncData = async () => {
+              if (user && user.uid !== 'local') {
+                console.log('Data changed, syncing to cloud...');
+                setSyncStatus('syncing');
+                const data = {
+                  transactions,
+                  todos,
+                  toBuy,
+                  lendBorrow,
+                  settings,
+                  lastSync: new Date().toISOString()
+                };
+                
+                const success = await syncDataToCloud(user.uid, data);
+                if (success) {
+                  console.log('Cloud sync completed successfully');
+                  setSyncStatus('synced');
+                } else {
+                  console.log('Cloud sync failed');
+                  setSyncStatus('error');
+                }
+              }
+            };
+
+            // Use a timeout to debounce rapid changes
+            const timeoutId = setTimeout(syncData, 1000);
+            return () => clearTimeout(timeoutId);
           }, [transactions, todos, toBuy, lendBorrow, settings, user]);
 
           useEffect(() => {
@@ -1541,6 +1617,7 @@
                 await auth.signOut();
               }
               setUser({ uid: 'local', displayName: 'User', email: 'local@user.com' });
+              setSyncStatus('local');
             } catch (error) {
               console.error('Error signing out:', error);
             }
@@ -1560,7 +1637,13 @@
                             <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Hello, {settings.name}</h1>
                             <p className="text-gray-500 dark:text-gray-400 text-sm"><strong>Mero Jivan</strong> by Bidur Bhattarai</p>
                             {user.uid !== 'local' && (
-                              <p className="text-xs text-teal-500">✓ Cloud Sync Active</p>
+                              <p className="text-xs text-teal-500">
+                                {syncStatus === 'syncing' && '🔄 Syncing...'}
+                                {syncStatus === 'synced' && '✓ Cloud Sync Active'}
+                                {syncStatus === 'loading' && '📥 Loading from cloud...'}
+                                {syncStatus === 'error' && '❌ Sync Error'}
+                                {syncStatus === 'no-data' && 'ℹ️ No cloud data found'}
+                              </p>
                             )}
                           </div>
                       </header>
