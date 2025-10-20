@@ -95,6 +95,7 @@
       const BookIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>);
       const ShareIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>);
       const SyncIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>);
+      const UsersIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" /></svg>);
 
       // --- DATA & HELPERS ---
       const CATEGORIES = { expense: [{ id: 'food', name: 'Food', Icon: FoodIcon, color: '#FF6384' },{ id: 'transport', name: 'Transport', Icon: TransportIcon, color: '#36A2EB' },{ id: 'home', name: 'Home', Icon: OtherIcon, color: '#FFCE56' },{ id: 'bills', name: 'Bills', Icon: BillsIcon, color: '#4BC0C0' },{ id: 'shopping', name: 'Shopping', Icon: ShoppingIcon, color: '#9966FF' },{ id: 'fun', name: 'Fun', Icon: FunIcon, color: '#FF9F40' },{ id: 'health', name: 'Health', Icon: HealthIcon, color: '#E83E8C' },{ id: 'other_expense', name: 'Other', Icon: OtherIcon, color: '#6C757D' }], income: [{ id: 'salary', name: 'Salary', Icon: SalaryIcon },{ id: 'gift', name: 'Gift', Icon: GiftIcon },{ id: 'other_income', name: 'Other', Icon: OtherIcon }] };
@@ -297,22 +298,20 @@
           ]
       };
 
-      // --- FIXED CLOUD SYNC FUNCTIONS WITH MANUAL SYNC ---
+      // --- FIXED CLOUD SYNC FUNCTIONS WITH IMPROVED CONFLICT RESOLUTION ---
       const syncDataToCloud = async (userId, data) => {
         try {
           if (database && userId && userId !== 'local') {
             console.log('🔄 Syncing data to cloud for user:', userId);
-            await database.ref(`users/${userId}`).set({
-              transactions: data.transactions || [],
-              todos: data.todos || [],
-              toBuy: data.toBuy || [],
-              lendBorrow: data.lendBorrow || [],
-              movies: data.movies || [],
-              books: data.books || [],
-              settings: data.settings || {},
+            
+            // Add timestamps for conflict resolution
+            const dataWithTimestamps = {
+              ...data,
               lastSync: new Date().toISOString(),
               lastSyncBy: 'device_' + Math.random().toString(36).substr(2, 9)
-            });
+            };
+            
+            await database.ref(`users/${userId}`).set(dataWithTimestamps);
             console.log('✅ Data successfully synced to cloud');
             return true;
           } else {
@@ -341,7 +340,9 @@
                 lendBorrow: cloudData.lendBorrow || [],
                 movies: cloudData.movies || [],
                 books: cloudData.books || [],
-                settings: cloudData.settings || {}
+                settings: cloudData.settings || {},
+                friends: cloudData.friends || {},
+                requests: cloudData.requests || {}
               };
             } else {
               console.log('ℹ️ No cloud data found for user');
@@ -352,6 +353,35 @@
           console.error('❌ Error loading from cloud:', error);
         }
         return null;
+      };
+
+      // Improved merge function for conflict resolution
+      const mergeData = (localData, cloudData, dataType) => {
+        if (!cloudData || cloudData.length === 0) return localData;
+        if (!localData || localData.length === 0) return cloudData;
+        
+        const merged = [...cloudData];
+        const cloudIds = new Set(cloudData.map(item => item.id));
+        
+        localData.forEach(localItem => {
+          if (!cloudIds.has(localItem.id)) {
+            // New local item
+            merged.push({...localItem, updatedAt: localItem.updatedAt || Date.now()});
+          } else {
+            // Existing item - check timestamps
+            const cloudItem = cloudData.find(c => c.id === localItem.id);
+            const localUpdated = localItem.updatedAt || 0;
+            const cloudUpdated = cloudItem.updatedAt || 0;
+            
+            if (localUpdated > cloudUpdated) {
+              // Local is newer, replace cloud version
+              const index = merged.findIndex(item => item.id === localItem.id);
+              merged[index] = {...localItem, updatedAt: localUpdated};
+            }
+          }
+        });
+        
+        return merged.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
       };
 
       // --- CHILD COMPONENTS ---
@@ -431,7 +461,7 @@
         const handleSubmit = (e) => { 
           e.preventDefault(); 
           if (!amount || !categoryId) return; 
-          addTransaction({ type, amount: parseFloat(amount), description, categoryId, date }); 
+          addTransaction({ type, amount: parseFloat(amount), description, categoryId, date, updatedAt: Date.now() }); 
         }; 
         
         const nepaliDate = gregorianToNepali(date); 
@@ -503,7 +533,8 @@
               priority: newTodoPriority, 
               completed: false, 
               createdAt: new Date().toISOString(),
-              period: activeTab // Store which period this task belongs to
+              period: activeTab, // Store which period this task belongs to
+              updatedAt: Date.now()
             };
             setTodos(prev => [newTodo, ...prev]); 
             setNewTodoText(''); 
@@ -511,7 +542,7 @@
           }; 
 
           const toggleTodo = (id) => { 
-            setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t)); 
+            setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed, updatedAt: Date.now() } : t)); 
           }; 
 
           const deleteTodo = (id) => { 
@@ -633,11 +664,11 @@
         const addItem = (e) => { 
           e.preventDefault(); 
           if (newItemText.trim() === '') return; 
-          setToBuy(prev => [{ id: Date.now(), text: newItemText, purchased: false }, ...prev]); 
+          setToBuy(prev => [{ id: Date.now(), text: newItemText, purchased: false, updatedAt: Date.now() }, ...prev]); 
           setNewItemText(''); 
         }; 
         const toggleItem = (id) => { 
-          setToBuy(prev => prev.map(item => item.id === id ? { ...item, purchased: !item.purchased } : item)); 
+          setToBuy(prev => prev.map(item => item.id === id ? { ...item, purchased: !item.purchased, updatedAt: Date.now() } : item)); 
         }; 
         const deleteItem = (id) => { 
           setToBuy(prev => prev.filter(item => item.id !== id)); 
@@ -1014,20 +1045,48 @@
 
       // NEW COMPONENTS FOR MEDIA TRACKING
       const MediaTracking = ({ type, items, setItems }) => {
-        const [newItem, setNewItem] = useState({ title: '', category: type === 'movies' ? 'watchlist' : 'readlist', rating: 5 });
+        const [newItem, setNewItem] = useState({ 
+          title: '', 
+          status: type === 'movies' ? 'watchlist' : 'readlist', 
+          rating: 5,
+          notes: '',
+          category: type === 'movies' ? 'movie' : 'book'
+        });
         const [activeTab, setActiveTab] = useState(type === 'movies' ? 'watchlist' : 'readlist');
         const [showShareModal, setShowShareModal] = useState(false);
         const [shareUserId, setShareUserId] = useState('');
 
-        const addItem = () => {
+        const addItem = (e) => {
+          e.preventDefault();
           if (!newItem.title.trim()) return;
           const item = {
             id: Date.now(),
             ...newItem,
-            createdAt: new Date().toISOString()
+            addedAt: new Date().toISOString(),
+            updatedAt: Date.now()
           };
           setItems(prev => [item, ...prev]);
-          setNewItem({ title: '', category: type === 'movies' ? 'watchlist' : 'readlist', rating: 5 });
+          setNewItem({ 
+            title: '', 
+            status: type === 'movies' ? 'watchlist' : 'readlist', 
+            rating: 5,
+            notes: '',
+            category: type === 'movies' ? 'movie' : 'book'
+          });
+        };
+
+        const toggleStatus = (id) => {
+          setItems(prev => prev.map(item => 
+            item.id === id 
+              ? { 
+                  ...item, 
+                  status: item.status === (type === 'movies' ? 'watchlist' : 'readlist') 
+                    ? (type === 'movies' ? 'watched' : 'read') 
+                    : (type === 'movies' ? 'watchlist' : 'readlist'),
+                  updatedAt: Date.now()
+                } 
+              : item
+          ));
         };
 
         const deleteItem = (id) => {
@@ -1052,9 +1111,10 @@
               fromUserId: auth.currentUser.uid,
               fromUserName: auth.currentUser.displayName || auth.currentUser.email,
               type: type,
-              data: items,
+              data: items.filter(item => item.status === (type === 'movies' ? 'watchlist' : 'readlist')),
               sharedAt: Date.now(),
-              listName: type === 'movies' ? 'Movies/Series List' : 'Books List'
+              listName: type === 'movies' ? 'Movies/Series List' : 'Books List',
+              expiresAt: Date.now() + (7 * 24 * 60 * 60 * 1000) // 7 days
             };
 
             // Save to target user's shared lists
@@ -1069,17 +1129,18 @@
           }
         };
 
-        const filteredItems = items.filter(item => item.category === activeTab);
+        const filteredItems = items.filter(item => item.status === activeTab);
 
         return (
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 mt-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-lg text-gray-800 dark:text-white">
+              <h3 className="font-bold text-lg text-gray-800 dark:text-white flex items-center">
+                {type === 'movies' ? <MovieIcon className="mr-2" /> : <BookIcon className="mr-2" />}
                 {type === 'movies' ? 'Movies & Series' : 'Books'}
               </h3>
               <button
                 onClick={() => setShowShareModal(true)}
-                className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg flex items-center space-x-2"
+                className="bg-teal-500 hover:bg-teal-600 text-white py-2 px-4 rounded-lg flex items-center space-x-2"
               >
                 <ShareIcon />
                 <span>Share</span>
@@ -1131,7 +1192,7 @@
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
               >
-                {type === 'movies' ? 'Watchlist' : 'To Read'} ({items.filter(item => item.category === (type === 'movies' ? 'watchlist' : 'readlist')).length})
+                {type === 'movies' ? 'Watchlist' : 'To Read'} ({items.filter(item => item.status === (type === 'movies' ? 'watchlist' : 'readlist')).length})
               </button>
               <button
                 onClick={() => setActiveTab(type === 'movies' ? 'watched' : 'read')}
@@ -1141,53 +1202,71 @@
                     : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
               >
-                {type === 'movies' ? 'Watched' : 'Read'} ({items.filter(item => item.category === (type === 'movies' ? 'watched' : 'read')).length})
+                {type === 'movies' ? 'Watched' : 'Read'} ({items.filter(item => item.status === (type === 'movies' ? 'watched' : 'read')).length})
               </button>
             </div>
 
             {/* Add Item Form */}
             <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-3">
-                <input
-                  type="text"
-                  value={newItem.title}
-                  onChange={(e) => setNewItem({...newItem, title: e.target.value})}
-                  placeholder={`Add ${type === 'movies' ? 'movie/series' : 'book'} title`}
-                  className="md:col-span-2 shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500"
-                />
-                <select
-                  value={newItem.category}
-                  onChange={(e) => setNewItem({...newItem, category: e.target.value})}
-                  className="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500"
-                >
-                  <option value={type === 'movies' ? 'watchlist' : 'readlist'}>
-                    {type === 'movies' ? 'Watchlist' : 'To Read'}
-                  </option>
-                  <option value={type === 'movies' ? 'watched' : 'read'}>
-                    {type === 'movies' ? 'Watched' : 'Read'}
-                  </option>
-                </select>
-              </div>
-              <div className="flex justify-between items-center">
-                <div className="flex items-center space-x-2">
-                  <span className="text-sm text-gray-600 dark:text-gray-400">Rating:</span>
+              <form onSubmit={addItem}>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  <input
+                    type="text"
+                    value={newItem.title}
+                    onChange={(e) => setNewItem({...newItem, title: e.target.value})}
+                    placeholder={`Add ${type === 'movies' ? 'movie/series' : 'book'} title`}
+                    className="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500"
+                  />
+                  {type === 'movies' && (
+                    <select
+                      value={newItem.category}
+                      onChange={(e) => setNewItem({...newItem, category: e.target.value})}
+                      className="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500"
+                    >
+                      <option value="movie">Movie</option>
+                      <option value="series">Series</option>
+                    </select>
+                  )}
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+                  <select
+                    value={newItem.status}
+                    onChange={(e) => setNewItem({...newItem, status: e.target.value})}
+                    className="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500"
+                  >
+                    <option value={type === 'movies' ? 'watchlist' : 'readlist'}>
+                      {type === 'movies' ? 'Watchlist' : 'To Read'}
+                    </option>
+                    <option value={type === 'movies' ? 'watched' : 'read'}>
+                      {type === 'movies' ? 'Watched' : 'Read'}
+                    </option>
+                  </select>
                   <select
                     value={newItem.rating}
                     onChange={(e) => setNewItem({...newItem, rating: parseInt(e.target.value)})}
-                    className="shadow-sm appearance-none border rounded-lg py-1 px-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500 text-sm"
+                    className="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500"
                   >
                     {[1,2,3,4,5,6,7,8,9,10].map(num => (
                       <option key={num} value={num}>{num} ★</option>
                     ))}
                   </select>
                 </div>
+                <div className="mb-3">
+                  <input
+                    type="text"
+                    value={newItem.notes}
+                    onChange={(e) => setNewItem({...newItem, notes: e.target.value})}
+                    placeholder="Notes (optional)"
+                    className="shadow-sm appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500"
+                  />
+                </div>
                 <button
-                  onClick={addItem}
-                  className="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg"
+                  type="submit"
+                  className="w-full bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg"
                 >
-                  Add
+                  Add {type === 'movies' ? 'Movie/Series' : 'Book'}
                 </button>
-              </div>
+              </form>
             </div>
 
             {/* Items List */}
@@ -1200,22 +1279,222 @@
                 filteredItems.map((item) => (
                   <div key={item.id} className="flex items-center justify-between p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50">
                     <div className="flex items-center space-x-3">
-                      <div className={`w-3 h-3 rounded-full ${item.category === (type === 'movies' ? 'watched' : 'read') ? 'bg-green-500' : 'bg-blue-500'}`}></div>
+                      <input 
+                        type="checkbox" 
+                        checked={item.status === (type === 'movies' ? 'watched' : 'read')} 
+                        onChange={() => toggleStatus(item.id)} 
+                        className="h-5 w-5 rounded border-gray-300 dark:border-gray-600 text-teal-600 focus:ring-teal-500 cursor-pointer bg-gray-100 dark:bg-gray-900"
+                      />
                       <div>
                         <p className="font-medium text-gray-800 dark:text-white">{item.title}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {item.category === (type === 'movies' ? 'watched' : 'read') ? `Rated: ${'★'.repeat(item.rating)}${'☆'.repeat(10 - item.rating)}` : 'Planned'}
-                        </p>
+                        <div className="flex items-center space-x-2 text-sm text-gray-500 dark:text-gray-400">
+                          {type === 'movies' && (
+                            <span className="capitalize">{item.category}</span>
+                          )}
+                          <span>•</span>
+                          <span>{'★'.repeat(item.rating)}{'☆'.repeat(10 - item.rating)}</span>
+                          {item.notes && (
+                            <>
+                              <span>•</span>
+                              <span>{item.notes}</span>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                     <button
                       onClick={() => deleteItem(item.id)}
-                      className="text-red-500 hover:text-red-700 transition-colors"
+                      className="text-red-500 hover:text-red-700 transition-colors p-1"
                     >
                       <DeleteIcon />
                     </button>
                   </div>
                 ))
+              )}
+            </div>
+          </div>
+        );
+      };
+
+      // NEW FRIENDS VIEW COMPONENT
+      const FriendsView = ({ friends, setFriends, requests, setRequests, user }) => {
+        const [searchTerm, setSearchTerm] = useState('');
+        const [searchResults, setSearchResults] = useState([]);
+        const [isSearching, setIsSearching] = useState(false);
+
+        const searchUsers = async () => {
+          if (!searchTerm.trim()) return;
+          
+          setIsSearching(true);
+          try {
+            // Search in userIds node
+            const userRef = database.ref('userIds').orderByKey().startAt(searchTerm).endAt(searchTerm + '\uf8ff');
+            const snapshot = await userRef.once('value');
+            const results = [];
+            
+            snapshot.forEach(childSnapshot => {
+              if (childSnapshot.key !== user.uid) { // Exclude self
+                results.push({
+                  userId: childSnapshot.key,
+                  ...childSnapshot.val()
+                });
+              }
+            });
+            
+            setSearchResults(results);
+          } catch (error) {
+            console.error('Error searching users:', error);
+          } finally {
+            setIsSearching(false);
+          }
+        };
+
+        const sendFriendRequest = async (targetUserId) => {
+          try {
+            const targetUserRef = database.ref(`users/${targetUserId}`);
+            const snapshot = await targetUserRef.once('value');
+            
+            if (snapshot.exists()) {
+              await database.ref(`users/${targetUserId}/requests`).update({
+                [user.uid]: 'pending'
+              });
+              alert('Friend request sent!');
+            }
+          } catch (error) {
+            console.error('Error sending friend request:', error);
+            alert('Error sending friend request.');
+          }
+        };
+
+        const acceptFriendRequest = async (fromUserId) => {
+          try {
+            // Remove from requests
+            await database.ref(`users/${user.uid}/requests/${fromUserId}`).remove();
+            
+            // Add to friends for both users
+            await database.ref(`users/${user.uid}/friends`).update({
+              [fromUserId]: 'accepted'
+            });
+            
+            await database.ref(`users/${fromUserId}/friends`).update({
+              [user.uid]: 'accepted'
+            });
+            
+            setFriends(prev => ({ ...prev, [fromUserId]: 'accepted' }));
+            setRequests(prev => {
+              const newRequests = { ...prev };
+              delete newRequests[fromUserId];
+              return newRequests;
+            });
+          } catch (error) {
+            console.error('Error accepting friend request:', error);
+          }
+        };
+
+        const declineFriendRequest = async (fromUserId) => {
+          try {
+            await database.ref(`users/${user.uid}/requests/${fromUserId}`).remove();
+            setRequests(prev => {
+              const newRequests = { ...prev };
+              delete newRequests[fromUserId];
+              return newRequests;
+            });
+          } catch (error) {
+            console.error('Error declining friend request:', error);
+          }
+        };
+
+        return (
+          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6 space-y-6">
+            <h3 className="font-bold text-lg text-gray-800 dark:text-white">Friends</h3>
+
+            {/* Search Section */}
+            <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
+              <h4 className="font-semibold text-gray-800 dark:text-white mb-3">Find Friends</h4>
+              <div className="flex space-x-2">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search by User ID"
+                  className="flex-1 shadow-sm appearance-none border rounded-lg py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-600 border-gray-300 dark:border-gray-500"
+                />
+                <button
+                  onClick={searchUsers}
+                  disabled={isSearching}
+                  className="bg-teal-500 hover:bg-teal-600 text-white font-bold py-2 px-4 rounded-lg disabled:opacity-50"
+                >
+                  {isSearching ? 'Searching...' : 'Search'}
+                </button>
+              </div>
+
+              {/* Search Results */}
+              {searchResults.length > 0 && (
+                <div className="mt-4 space-y-2">
+                  {searchResults.map(user => (
+                    <div key={user.userId} className="flex justify-between items-center p-3 bg-white dark:bg-gray-600 rounded-lg">
+                      <div>
+                        <p className="font-medium text-gray-800 dark:text-white">{user.userId}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">{user.displayName}</p>
+                      </div>
+                      <button
+                        onClick={() => sendFriendRequest(user.uid)}
+                        className="bg-blue-500 hover:bg-blue-600 text-white py-1 px-3 rounded text-sm"
+                      >
+                        Add Friend
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Friend Requests */}
+            {Object.keys(requests).length > 0 && (
+              <div>
+                <h4 className="font-semibold text-gray-800 dark:text-white mb-3">Friend Requests</h4>
+                <div className="space-y-2">
+                  {Object.entries(requests).map(([userId, status]) => (
+                    <div key={userId} className="flex justify-between items-center p-3 bg-yellow-50 dark:bg-yellow-900/30 rounded-lg">
+                      <span className="font-medium text-gray-800 dark:text-white">{userId}</span>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() => acceptFriendRequest(userId)}
+                          className="bg-green-500 hover:bg-green-600 text-white py-1 px-3 rounded text-sm"
+                        >
+                          Accept
+                        </button>
+                        <button
+                          onClick={() => declineFriendRequest(userId)}
+                          className="bg-red-500 hover:bg-red-600 text-white py-1 px-3 rounded text-sm"
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Friends List */}
+            <div>
+              <h4 className="font-semibold text-gray-800 dark:text-white mb-3">
+                Your Friends ({Object.keys(friends).length})
+              </h4>
+              {Object.keys(friends).length === 0 ? (
+                <p className="text-center text-gray-500 dark:text-gray-400 py-4">
+                  No friends yet. Search for users above to add friends!
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {Object.keys(friends).map(friendId => (
+                    <div key={friendId} className="flex justify-between items-center p-3 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                      <span className="font-medium text-gray-800 dark:text-white">{friendId}</span>
+                      <span className="text-sm text-green-600 dark:text-green-400">Friends</span>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           </div>
@@ -1251,7 +1530,7 @@
         
         const openModal = (type) => { setModalInitialType(type); setIsModalOpen(true); };
         const addTransaction = (transaction) => { 
-          const newTransaction = { ...transaction, id: Date.now() };
+          const newTransaction = { ...transaction, id: Date.now(), updatedAt: Date.now() };
           setTransactions(prev => [newTransaction, ...prev]); 
           setIsModalOpen(false); 
         };
@@ -1412,8 +1691,20 @@
           ); 
       };
 
-      const AccountView = ({ settings, setSettings, clearAllData, isConfirming, setIsConfirming, user, onSignIn, onSignOut }) => {
-          const { name, profilePicUrl, theme } = settings;
+      const SocialView = ({ friends, setFriends, requests, setRequests, user }) => {
+        return (
+          <FriendsView 
+            friends={friends} 
+            setFriends={setFriends} 
+            requests={requests} 
+            setRequests={setRequests} 
+            user={user}
+          />
+        );
+      };
+
+      const AccountView = ({ settings, setSettings, clearAllData, isConfirming, setIsConfirming, user, onSignIn, onSignOut, theme, setTheme }) => {
+          const { name, profilePicUrl } = settings;
           const fileInputRef = useRef(null);
           const [showAuth, setShowAuth] = useState(false);
           const [userId, setUserId] = useState(localStorage.getItem('userId') || '');
@@ -1444,7 +1735,7 @@
 
           const handleThemeChange = (e) => {
               const newTheme = e.target.checked ? 'dark' : 'light';
-              setSettings(prev => ({ ...prev, theme: newTheme }));
+              setTheme(newTheme);
           };
 
           const handleSetUserId = async () => {
@@ -1679,7 +1970,8 @@
                   person,
                   amount: parseFloat(amount),
                   description,
-                  date: new Date().toISOString()
+                  date: new Date().toISOString(),
+                  updatedAt: Date.now()
               }, ...prev]);
               setPerson('');
               setAmount('');
@@ -1751,6 +2043,13 @@
           const [syncStatus, setSyncStatus] = useState('idle');
           const [lastSyncTime, setLastSyncTime] = useState(null);
           const [isSyncing, setIsSyncing] = useState(false);
+          const [theme, setTheme] = useState(() => {
+            try {
+              return localStorage.getItem('lifeDashboard-theme') || 'light';
+            } catch {
+              return 'light';
+            }
+          });
           
           const useStickyState = (defaultValue, key) => {
               const [value, setValue] = useState(() => {
@@ -1771,15 +2070,27 @@
               return [value, setValue];
           };
 
-          const [settings, setSettings] = useStickyState({ name: 'User', profilePicUrl: '', theme: 'light' }, 'lifeDashboard-settings');
+          const [settings, setSettings] = useStickyState({ name: 'User', profilePicUrl: '' }, 'lifeDashboard-settings');
           const [transactions, setTransactions] = useStickyState([], 'lifeDashboard-transactions');
           const [todos, setTodos] = useStickyState([], 'lifeDashboard-todos');
           const [toBuy, setToBuy] = useStickyState([], 'lifeDashboard-toBuy');
           const [lendBorrow, setLendBorrow] = useStickyState([], 'lifeDashboard-lendBorrow');
           const [movies, setMovies] = useStickyState([], 'lifeDashboard-movies');
           const [books, setBooks] = useStickyState([], 'lifeDashboard-books');
+          const [friends, setFriends] = useStickyState({}, 'lifeDashboard-friends');
+          const [requests, setRequests] = useStickyState({}, 'lifeDashboard-requests');
           const [isConfirmingClear, setIsConfirmingClear] = useState(false);
           
+          // Theme effect
+          useEffect(() => {
+            localStorage.setItem('lifeDashboard-theme', theme);
+            if (theme === 'dark') {
+              document.documentElement.classList.add('dark');
+            } else {
+              document.documentElement.classList.remove('dark');
+            }
+          }, [theme]);
+
           // Improved Auth state listener with manual sync
           useEffect(() => {
             if (auth) {
@@ -1794,6 +2105,9 @@
                   if (snapshot.exists()) {
                     localStorage.setItem('userId', snapshot.val().userId);
                   }
+                  
+                  // Load initial data from cloud
+                  handleManualSync();
                 } else {
                   // User signed out
                   setUser({ uid: 'local', displayName: 'User', email: 'local@user.com' });
@@ -1805,7 +2119,7 @@
             }
           }, []);
 
-          // Manual sync function
+          // Manual sync function with improved conflict resolution
           const handleManualSync = async () => {
             if (user && user.uid !== 'local') {
               try {
@@ -1815,15 +2129,18 @@
                 // First load data from cloud
                 const cloudData = await loadDataFromCloud(user.uid);
                 if (cloudData) {
-                  console.log('Cloud data loaded, applying to local state');
+                  console.log('Cloud data loaded, merging with local data');
                   
-                  // Merge cloud data with local data (prefer local for conflicts)
-                  if (cloudData.transactions) setTransactions(cloudData.transactions);
-                  if (cloudData.todos) setTodos(cloudData.todos);
-                  if (cloudData.toBuy) setToBuy(cloudData.toBuy);
-                  if (cloudData.lendBorrow) setLendBorrow(cloudData.lendBorrow);
-                  if (cloudData.movies) setMovies(cloudData.movies);
-                  if (cloudData.books) setBooks(cloudData.books);
+                  // Merge data with conflict resolution
+                  setTransactions(prev => mergeData(prev, cloudData.transactions, 'transactions'));
+                  setTodos(prev => mergeData(prev, cloudData.todos, 'todos'));
+                  setToBuy(prev => mergeData(prev, cloudData.toBuy, 'toBuy'));
+                  setLendBorrow(prev => mergeData(prev, cloudData.lendBorrow, 'lendBorrow'));
+                  setMovies(prev => mergeData(prev, cloudData.movies, 'movies'));
+                  setBooks(prev => mergeData(prev, cloudData.books, 'books'));
+                  setFriends(prev => ({ ...prev, ...cloudData.friends }));
+                  setRequests(prev => ({ ...prev, ...cloudData.requests }));
+                  
                   if (cloudData.settings) {
                     setSettings(prev => ({ ...prev, ...cloudData.settings }));
                   }
@@ -1838,6 +2155,8 @@
                   movies,
                   books,
                   settings,
+                  friends,
+                  requests,
                   lastSync: new Date().toISOString(),
                   lastSyncBy: 'manual_sync'
                 };
@@ -1865,14 +2184,6 @@
               return () => clearInterval(syncInterval);
             }
           }, [user]);
-
-          useEffect(() => {
-              if (settings.theme === 'dark') {
-                  document.documentElement.classList.add('dark');
-              } else {
-                  document.documentElement.classList.remove('dark');
-              }
-          }, [settings.theme]);
 
           const handleSignIn = (userData) => {
             setUser(userData);
@@ -1927,7 +2238,7 @@
                     </div>
                   )}
 
-                  <main className="flex-grow container mx-auto p-4 pb-20">
+                  <main className="flex-grow container mx-auto p-4 pb-24">
                       {currentView === 'money' && (
                         <MoneyView 
                           transactions={transactions} 
@@ -1949,6 +2260,15 @@
                         />
                       )}
                       {currentView === 'grow' && <GrowView />}
+                      {currentView === 'social' && (
+                        <SocialView
+                          friends={friends}
+                          setFriends={setFriends}
+                          requests={requests}
+                          setRequests={setRequests}
+                          user={user}
+                        />
+                      )}
                       {currentView === 'account' && (
                         <AccountView 
                           settings={settings} 
@@ -1959,16 +2279,19 @@
                           user={user}
                           onSignIn={handleSignIn}
                           onSignOut={handleSignOut}
+                          theme={theme}
+                          setTheme={setTheme}
                         />
                       )}
                   </main>
                   
-                  {/* Smaller Navigation Bar */}
+                  {/* Enhanced Navigation Bar with Social Tab */}
                   <div className="fixed bottom-0 left-0 right-0 bg-white dark:bg-gray-800 shadow-[0_-2px_10px_rgba(0,0,0,0.05)] dark:shadow-[0_-2px_10px_rgba(0,0,0,0.2)]">
                        <div className="container mx-auto flex justify-around items-center p-2">
                           <button onClick={() => setCurrentView('money')} className={`p-2 rounded-full flex flex-col items-center w-16 ${currentView==='money' ? 'text-teal-600 dark:text-teal-400' : 'text-gray-500 dark:text-gray-400'}`}><MoneyIcon /><span className="text-xs mt-1">Money</span></button>
                           <button onClick={() => setCurrentView('life')} className={`p-2 rounded-full flex flex-col items-center w-16 ${currentView==='life' ? 'text-teal-600 dark:text-teal-400' : 'text-gray-500 dark:text-gray-400'}`}><LifeIcon /><span className="text-xs mt-1">Life</span></button>
                           <button onClick={() => setCurrentView('grow')} className={`p-2 rounded-full flex flex-col items-center w-16 ${currentView==='grow' ? 'text-teal-600 dark:text-teal-400' : 'text-gray-500 dark:text-gray-400'}`}><GrowIcon /><span className="text-xs mt-1">Grow</span></button>
+                          <button onClick={() => setCurrentView('social')} className={`p-2 rounded-full flex flex-col items-center w-16 ${currentView==='social' ? 'text-teal-600 dark:text-teal-400' : 'text-gray-500 dark:text-gray-400'}`}><UsersIcon /><span className="text-xs mt-1">Social</span></button>
                           <ProfilePicture 
                             onClick={() => setCurrentView('account')} 
                             src={user.photoURL || settings.profilePicUrl}
