@@ -296,160 +296,192 @@
       };
 
       // =============================================
-      // ENHANCED SYNC SYSTEM WITH CONFLICT RESOLUTION
+      // FIXED SYNC SYSTEM WITH PROPER CONFLICT RESOLUTION
       // =============================================
-      
-      // Track last sync timestamps for conflict resolution
-      const getLastModifiedTimestamps = () => {
-        const timestamps = JSON.parse(localStorage.getItem('lifeDashboard-lastModified') || '{}');
-        return timestamps;
+
+      // Track user activity to prevent sync during input
+      let userIsActive = false;
+      let activityTimer = null;
+
+      const trackUserActivity = () => {
+          userIsActive = true;
+          if (activityTimer) clearTimeout(activityTimer);
+          activityTimer = setTimeout(() => {
+              userIsActive = false;
+          }, 3000); // 3 seconds after last activity
       };
 
-      const updateLastModifiedTimestamp = (dataType, itemId = null) => {
-        const timestamps = getLastModifiedTimestamps();
-        const key = itemId ? `${dataType}_${itemId}` : dataType;
-        timestamps[key] = Date.now();
-        localStorage.setItem('lifeDashboard-lastModified', JSON.stringify(timestamps));
-        return timestamps[key];
-      };
+      // Listen for user activity
+      if (typeof document !== 'undefined') {
+          document.addEventListener('click', trackUserActivity);
+          document.addEventListener('keydown', trackUserActivity);
+          document.addEventListener('input', trackUserActivity);
+      }
 
-      // Enhanced conflict resolution with timestamp-based merging
+      // Enhanced conflict resolution with proper timestamp handling
       const resolveDataConflicts = (localData, cloudData, dataType) => {
-        if (!cloudData || cloudData.length === 0) return localData;
-        if (!localData || localData.length === 0) return cloudData;
+          if (!cloudData || cloudData.length === 0) return localData;
+          if (!localData || localData.length === 0) return cloudData;
 
-        const localMap = new Map(localData.map(item => [item.id, item]));
-        const cloudMap = new Map(cloudData.map(item => [item.id, item]));
-        const mergedData = [];
-        const allIds = new Set([...localMap.keys(), ...cloudMap.keys()]);
+          const localMap = new Map(localData.map(item => [item.id, item]));
+          const cloudMap = new Map(cloudData.map(item => [item.id, item]));
+          const mergedData = [];
+          const allIds = new Set([...localMap.keys(), ...cloudMap.keys()]);
 
-        for (const id of allIds) {
-          const localItem = localMap.get(id);
-          const cloudItem = cloudMap.get(id);
+          for (const id of allIds) {
+              const localItem = localMap.get(id);
+              const cloudItem = cloudMap.get(id);
 
-          if (!localItem) {
-            // Item only exists in cloud
-            mergedData.push(cloudItem);
-          } else if (!cloudItem) {
-            // Item only exists locally
-            mergedData.push(localItem);
-          } else {
-            // Item exists in both - resolve conflict using timestamps
-            const localTimestamp = localItem.lastModified || 0;
-            const cloudTimestamp = cloudItem.lastModified || 0;
+              if (!localItem) {
+                  // Item only exists in cloud
+                  mergedData.push(cloudItem);
+              } else if (!cloudItem) {
+                  // Item only exists locally
+                  mergedData.push(localItem);
+              } else {
+                  // Item exists in both - resolve conflict using PROPER timestamp comparison
+                  const localTimestamp = localItem.lastModified || (localItem.id && typeof localItem.id === 'number' ? localItem.id : 0);
+                  const cloudTimestamp = cloudItem.lastModified || (cloudItem.id && typeof cloudItem.id === 'number' ? cloudItem.id : 0);
 
-            if (cloudTimestamp > localTimestamp) {
-              // Cloud version is newer
-              mergedData.push(cloudItem);
-            } else {
-              // Local version is newer or same
-              mergedData.push(localItem);
-            }
+                  // Only override if cloud version is significantly newer (5 seconds threshold)
+                  if (cloudTimestamp > localTimestamp + 5000) {
+                      // Cloud version is newer by significant margin
+                      mergedData.push(cloudItem);
+                  } else {
+                      // Local version is newer or within threshold
+                      mergedData.push(localItem);
+                  }
+              }
           }
-        }
 
-        return mergedData.sort((a, b) => (b.id || 0) - (a.id || 0));
+          return mergedData.sort((a, b) => (b.id || 0) - (a.id || 0));
       };
 
-      // Enhanced sync with periodic updates and conflict resolution
-      const syncDataToCloud = async (userId, data, forceSync = false) => {
-        try {
-          if (database && userId && userId !== 'local') {
-            console.log('🔄 Syncing data to cloud for user:', userId);
-            
-            // Get current cloud data for conflict resolution
-            const snapshot = await database.ref(`users/${userId}`).once('value');
-            const existingCloudData = snapshot.val();
-            
-            // Resolve conflicts for each data type
-            const syncedData = {
-              transactions: resolveDataConflicts(data.transactions || [], existingCloudData?.transactions || [], 'transactions'),
-              todos: resolveDataConflicts(data.todos || [], existingCloudData?.todos || [], 'todos'),
-              toBuy: resolveDataConflicts(data.toBuy || [], existingCloudData?.toBuy || [], 'toBuy'),
-              lendBorrow: resolveDataConflicts(data.lendBorrow || [], existingCloudData?.lendBorrow || [], 'lendBorrow'),
-              movies: resolveDataConflicts(data.movies || [], existingCloudData?.movies || [], 'movies'),
-              books: resolveDataConflicts(data.books || [], existingCloudData?.books || [], 'books'),
-              settings: { ...existingCloudData?.settings, ...data.settings },
-              lastSync: new Date().toISOString(),
-              lastSyncBy: 'device_' + Math.random().toString(36).substr(2, 9)
-            };
+      // Debounced sync with user activity check
+      let syncTimeout = null;
+      const DEBOUNCE_DELAY = 5000; // 5 seconds delay
 
-            await database.ref(`users/${userId}`).set(syncedData);
-            console.log('✅ Data successfully synced to cloud with conflict resolution');
-            return true;
-          } else {
-            console.log('⏭️ Cloud sync skipped - no database or local user');
-            return false;
+      const syncDataToCloud = async (userId, data, forceSync = false) => {
+          try {
+              // Don't sync if user is active or no database
+              if (userIsActive && !forceSync) {
+                  console.log('⏸️ Sync paused - user is active');
+                  return false;
+              }
+
+              if (!database || !userId || userId === 'local') {
+                  console.log('⏭️ Cloud sync skipped - no database or local user');
+                  return false;
+              }
+
+              console.log('🔄 Starting sync to cloud for user:', userId);
+              
+              // Get current cloud data for conflict resolution
+              const snapshot = await database.ref(`users/${userId}`).once('value');
+              const existingCloudData = snapshot.val();
+              
+              // Resolve conflicts for each data type
+              const syncedData = {
+                  transactions: resolveDataConflicts(data.transactions || [], existingCloudData?.transactions || [], 'transactions'),
+                  todos: resolveDataConflicts(data.todos || [], existingCloudData?.todos || [], 'todos'),
+                  toBuy: resolveDataConflicts(data.toBuy || [], existingCloudData?.toBuy || [], 'toBuy'),
+                  lendBorrow: resolveDataConflicts(data.lendBorrow || [], existingCloudData?.lendBorrow || [], 'lendBorrow'),
+                  movies: resolveDataConflicts(data.movies || [], existingCloudData?.movies || [], 'movies'),
+                  books: resolveDataConflicts(data.books || [], existingCloudData?.books || [], 'books'),
+                  settings: { ...existingCloudData?.settings, ...data.settings },
+                  lastSync: new Date().toISOString(),
+                  lastSyncBy: 'device_' + Math.random().toString(36).substr(2, 9)
+              };
+
+              await database.ref(`users/${userId}`).set(syncedData);
+              console.log('✅ Data successfully synced to cloud with conflict resolution');
+              return true;
+          } catch (error) {
+              console.error('❌ Error syncing to cloud:', error);
+              return false;
           }
-        } catch (error) {
-          console.error('❌ Error syncing to cloud:', error);
-          return false;
-        }
       };
 
       const loadDataFromCloud = async (userId) => {
-        try {
-          if (database && userId && userId !== 'local') {
-            console.log('📥 Loading data from cloud for user:', userId);
-            const snapshot = await database.ref(`users/${userId}`).once('value');
-            const cloudData = snapshot.val();
-            
-            if (cloudData) {
-              console.log('✅ Cloud data loaded successfully');
-              return {
-                transactions: cloudData.transactions || [],
-                todos: cloudData.todos || [],
-                toBuy: cloudData.toBuy || [],
-                lendBorrow: cloudData.lendBorrow || [],
-                movies: cloudData.movies || [],
-                books: cloudData.books || [],
-                settings: cloudData.settings || {}
-              };
-            } else {
-              console.log('ℹ️ No cloud data found for user');
-              return null;
-            }
+          try {
+              if (database && userId && userId !== 'local') {
+                  console.log('📥 Loading data from cloud for user:', userId);
+                  const snapshot = await database.ref(`users/${userId}`).once('value');
+                  const cloudData = snapshot.val();
+                  
+                  if (cloudData) {
+                      console.log('✅ Cloud data loaded successfully');
+                      return {
+                          transactions: cloudData.transactions || [],
+                          todos: cloudData.todos || [],
+                          toBuy: cloudData.toBuy || [],
+                          lendBorrow: cloudData.lendBorrow || [],
+                          movies: cloudData.movies || [],
+                          books: cloudData.books || [],
+                          settings: cloudData.settings || {}
+                      };
+                  } else {
+                      console.log('ℹ️ No cloud data found for user');
+                      return null;
+                  }
+              }
+          } catch (error) {
+              console.error('❌ Error loading from cloud:', error);
           }
-        } catch (error) {
-          console.error('❌ Error loading from cloud:', error);
-        }
-        return null;
+          return null;
       };
 
-      // Enhanced real-time sync with periodic updates
+      // Enhanced real-time sync with proper debouncing
       const setupRealtimeListener = (userId, onDataChange) => {
-        if (database && userId && userId !== 'local') {
-          console.log('👂 Setting up real-time listener for user:', userId);
-          const userRef = database.ref(`users/${userId}`);
-          
-          // Real-time changes
-          userRef.on('value', (snapshot) => {
-            const cloudData = snapshot.val();
-            if (cloudData) {
-              console.log('🔄 Real-time update received from cloud');
-              onDataChange(cloudData);
-            }
-          }, (error) => {
-            console.error('❌ Real-time listener error:', error);
-          });
+          if (database && userId && userId !== 'local') {
+              console.log('👂 Setting up real-time listener for user:', userId);
+              const userRef = database.ref(`users/${userId}`);
+              
+              let isProcessing = false;
+              
+              // Real-time changes with debouncing
+              userRef.on('value', (snapshot) => {
+                  if (isProcessing || userIsActive) {
+                      console.log('⏸️ Skipping real-time update - user active or processing');
+                      return;
+                  }
+                  
+                  isProcessing = true;
+                  const cloudData = snapshot.val();
+                  if (cloudData) {
+                      console.log('🔄 Real-time update received from cloud');
+                      onDataChange(cloudData);
+                  }
+                  
+                  setTimeout(() => {
+                      isProcessing = false;
+                  }, 2000); // 2 second cooldown
+              }, (error) => {
+                  console.error('❌ Real-time listener error:', error);
+              });
 
-          // Periodic sync every 10 seconds as backup
-          const periodicSync = setInterval(() => {
-            console.log('⏰ Periodic sync check');
-            userRef.once('value').then((snapshot) => {
-              const cloudData = snapshot.val();
-              if (cloudData) {
-                onDataChange(cloudData);
-              }
-            });
-          }, 10000);
+              // Less frequent periodic sync (30 seconds)
+              const periodicSync = setInterval(() => {
+                  if (userIsActive) {
+                      console.log('⏸️ Periodic sync skipped - user active');
+                      return;
+                  }
+                  
+                  console.log('⏰ Periodic sync check');
+                  userRef.once('value').then((snapshot) => {
+                      const cloudData = snapshot.val();
+                      if (cloudData) {
+                          onDataChange(cloudData);
+                      }
+                  });
+              }, 30000); // 30 seconds
 
-          return () => {
-            userRef.off('value');
-            clearInterval(periodicSync);
-          };
-        }
-        return () => {};
+              return () => {
+                  userRef.off('value');
+                  clearInterval(periodicSync);
+              };
+          }
+          return () => {};
       };
 
       // --- CHILD COMPONENTS ---
@@ -509,7 +541,9 @@
         ); 
       };
       
-      const AddTransactionModal = ({ isOpen, onClose, addTransaction, initialType }) => { 
+      // UPDATED: Add Transaction Modal with edit support
+      const AddTransactionModal = ({ isOpen, onClose, addTransaction, initialType, editTransaction, transactionToEdit }) => { 
+        const isEditing = !!transactionToEdit;
         const [type, setType] = useState(initialType); 
         const [amount, setAmount] = useState(''); 
         const [description, setDescription] = useState(''); 
@@ -518,18 +552,41 @@
         const [isDatePickerOpen, setIsDatePickerOpen] = useState(false); 
         
         useEffect(() => { 
-          setType(initialType); 
-          setAmount(''); 
-          setDescription(''); 
-          setCategoryId(CATEGORIES[initialType][0].id); 
-        }, [isOpen, initialType]); 
+          if (isEditing && transactionToEdit) {
+            setType(transactionToEdit.type);
+            setAmount(transactionToEdit.amount.toString());
+            setDescription(transactionToEdit.description || '');
+            setCategoryId(transactionToEdit.categoryId);
+            setDate(transactionToEdit.date);
+          } else {
+            setType(initialType); 
+            setAmount(''); 
+            setDescription(''); 
+            setCategoryId(CATEGORIES[initialType][0].id); 
+            setDate(new Date().toISOString().split('T')[0]);
+          }
+        }, [isOpen, initialType, isEditing, transactionToEdit]); 
         
         if (!isOpen) return null; 
         
         const handleSubmit = (e) => { 
           e.preventDefault(); 
           if (!amount || !categoryId) return; 
-          addTransaction({ type, amount: parseFloat(amount), description, categoryId, date }); 
+          
+          const transactionData = { 
+            type, 
+            amount: parseFloat(amount), 
+            description, 
+            categoryId, 
+            date,
+            lastModified: Date.now()
+          };
+          
+          if (isEditing) {
+            editTransaction({ ...transactionData, id: transactionToEdit.id });
+          } else {
+            addTransaction({ ...transactionData, id: Date.now() });
+          }
         }; 
         
         const nepaliDate = gregorianToNepali(date); 
@@ -537,13 +594,20 @@
         return ( 
           <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-40"> 
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md m-4"> 
-              <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">{type === 'income' ? 'Add Income' : 'Add Expense'}</h2> 
+              <h2 className="text-2xl font-bold text-gray-800 dark:text-white mb-4">
+                {isEditing ? 'Edit Transaction' : (type === 'income' ? 'Add Income' : 'Add Expense')}
+              </h2> 
               <form onSubmit={handleSubmit}> 
                 <div className="mb-4"> 
                   <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Amount</label> 
                   <input type="number" value={amount} onChange={e => setAmount(e.target.value)} className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline" placeholder="रु 0.00" required /> 
                 </div> 
                 <div className="mb-4"> 
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Type</label>
+                  <div className="flex gap-2 mb-3">
+                    <button type="button" onClick={() => setType('income')} className={`flex-1 py-2 rounded-lg font-semibold ${type === 'income' ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}>Income</button>
+                    <button type="button" onClick={() => setType('expense')} className={`flex-1 py-2 rounded-lg font-semibold ${type === 'expense' ? 'bg-red-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}>Expense</button>
+                  </div>
                   <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Category</label> 
                   <div className="grid grid-cols-4 gap-2"> 
                     {CATEGORIES[type].map(cat => ( 
@@ -564,7 +628,9 @@
                 </div> 
                 <div className="flex items-center justify-between"> 
                   <button type="button" onClick={onClose} className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-lg">Cancel</button> 
-                  <button type="submit" className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg">Save</button> 
+                  <button type="submit" className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg">
+                    {isEditing ? 'Update' : 'Save'}
+                  </button> 
                 </div> 
               </form> 
               {isDatePickerOpen && <NepaliDatePicker gregorianDate={date} setGregorianDate={setDate} onClose={() => setIsDatePickerOpen(false)} />} 
@@ -1496,12 +1562,14 @@
       };
 
       // --- VIEWS / SECTIONS ---
+      // UPDATED: MoneyView with edit/delete functionality
       const MoneyView = ({ transactions, setTransactions, lendBorrow, setLendBorrow }) => { 
         const [view, setView] = useState('transactions');
         const [displayDate, setDisplayDate] = useState(() => { const today = gregorianToNepali(new Date().toISOString().split('T')[0]); return { year: today.year, month: today.month }; });
         const [isModalOpen, setIsModalOpen] = useState(false); 
         const [modalInitialType, setModalInitialType] = useState('expense'); 
         const [statsFilter, setStatsFilter] = useState('month');
+        const [transactionToEdit, setTransactionToEdit] = useState(null);
 
         const filteredTransactions = useMemo(() => {
             const now = new Date();
@@ -1522,12 +1590,37 @@
         const { totalIncome, totalExpense, balance } = useMemo(() => { let i = 0, e = 0; monthlyTransactions.forEach(t => t.type === 'income' ? i += t.amount : e += t.amount); return { totalIncome: i, totalExpense: e, balance: i - e }; }, [monthlyTransactions]); 
         const expenseByCategory = useMemo(() => { const map = {}; filteredTransactions.filter(t => t.type === 'expense').forEach(t => { if (!map[t.categoryId]) { const info = ALL_CATEGORIES[t.categoryId] || { name: 'Other', color: '#6C757D' }; map[t.categoryId] = { id: t.categoryId, name: info.name, value: 0, color: info.color }; } map[t.categoryId].value += t.amount; }); return Object.values(map).sort((a, b) => b.value - a.value); }, [filteredTransactions]); 
         
-        const openModal = (type) => { setModalInitialType(type); setIsModalOpen(true); };
+        const openModal = (type) => { 
+          setTransactionToEdit(null);
+          setModalInitialType(type); 
+          setIsModalOpen(true); 
+        };
+        
+        const editTransaction = (transaction) => {
+          setTransactionToEdit(transaction);
+          setIsModalOpen(true);
+        };
+        
+        const deleteTransaction = (id) => {
+          if (window.confirm('Are you sure you want to delete this transaction?')) {
+            setTransactions(prev => prev.filter(t => t.id !== id));
+          }
+        };
+        
         const addTransaction = (transaction) => { 
-          const newTransaction = { ...transaction, id: Date.now(), lastModified: Date.now() };
+          const newTransaction = { ...transaction, lastModified: Date.now() };
           setTransactions(prev => [newTransaction, ...prev]); 
           setIsModalOpen(false); 
         };
+        
+        const updateTransaction = (updatedTransaction) => {
+          setTransactions(prev => prev.map(t => 
+            t.id === updatedTransaction.id ? { ...updatedTransaction, lastModified: Date.now() } : t
+          ));
+          setIsModalOpen(false);
+          setTransactionToEdit(null);
+        };
+        
         const changeMonth = (direction) => { setDisplayDate(p => { let m=p.month+direction, y=p.year; if(m>12){m=1;y++;} if(m<1){m=12;y--;} return NEPALI_MONTH_DATA[y]?{year:y,month:m}:p;}); };
         
         const exportToCsv = () => {
@@ -1606,6 +1699,20 @@
                             <p className={`font-bold text-right ${t.type === 'income' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                               {t.type === 'income' ? '+' : '-'} रु {t.amount.toLocaleString('en-NP')}
                             </p>
+                            <div className="flex space-x-1 ml-2">
+                              <button 
+                                onClick={() => editTransaction(t)}
+                                className="p-1 text-gray-400 hover:text-blue-500"
+                              >
+                                <EditIcon />
+                              </button>
+                              <button 
+                                onClick={() => deleteTransaction(t.id)}
+                                className="p-1 text-gray-400 hover:text-red-500"
+                              >
+                                <DeleteIcon />
+                              </button>
+                            </div>
                           </div>
                         )
                       })
@@ -1654,7 +1761,17 @@
             )}
 
             {view === 'lendBorrow' && <LendBorrowView lendBorrow={lendBorrow} setLendBorrow={setLendBorrow} />}
-            <AddTransactionModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} addTransaction={addTransaction} initialType={modalInitialType} />
+            <AddTransactionModal 
+              isOpen={isModalOpen} 
+              onClose={() => {
+                setIsModalOpen(false);
+                setTransactionToEdit(null);
+              }} 
+              addTransaction={addTransaction}
+              editTransaction={updateTransaction}
+              initialType={modalInitialType} 
+              transactionToEdit={transactionToEdit}
+            />
           </React.Fragment>
         );
       };
@@ -1700,6 +1817,7 @@
           ); 
       };
 
+      // UPDATED: AccountView with instant local storage clear on logout
       const AccountView = ({ settings, setSettings, clearAllData, isConfirming, setIsConfirming, user, onSignIn, onSignOut }) => {
           const { name, profilePicUrl, theme } = settings;
           const fileInputRef = useRef(null);
@@ -1730,6 +1848,36 @@
           const handleThemeChange = (e) => {
               const newTheme = e.target.checked ? 'dark' : 'light';
               setSettings(prev => ({ ...prev, theme: newTheme }));
+          };
+          
+          // FIXED: Instant local storage clear on logout
+          const handleSignOut = async () => {
+            try {
+              if (auth) {
+                await auth.signOut();
+              }
+              
+              // Immediately clear ALL local storage
+              const keys = [
+                'lifeDashboard-settings',
+                'lifeDashboard-transactions', 
+                'lifeDashboard-todos',
+                'lifeDashboard-toBuy',
+                'lifeDashboard-lendBorrow',
+                'lifeDashboard-movies',
+                'lifeDashboard-books',
+                'lifeDashboard-lastModified'
+              ];
+              
+              keys.forEach(key => {
+                localStorage.removeItem(key);
+              });
+              
+              console.log('✅ All local storage cleared on logout');
+              onSignOut();
+            } catch (error) {
+              console.error('Error signing out:', error);
+            }
           };
           
           return (
@@ -1767,7 +1915,7 @@
                       {user && user.uid !== 'local' ? (
                         <div className="text-center">
                           <p className="text-sm text-gray-600 dark:text-gray-400">Signed in as: {user.email}</p>
-                          <button onClick={onSignOut} className="mt-2 text-sm text-red-500 hover:text-red-600">Sign Out</button>
+                          <button onClick={handleSignOut} className="mt-2 text-sm text-red-500 hover:text-red-600">Sign Out</button>
                         </div>
                       ) : (
                         <div className="text-center">
@@ -1789,7 +1937,7 @@
                          ✓ Firebase: {database ? 'Connected' : 'Not Available'}<br/>
                          ✓ Real-time sync active across devices<br/>
                          ✓ Conflict resolution enabled<br/>
-                         ✓ Periodic sync every 10 seconds
+                         ✓ Periodic sync every 30 seconds
                        </p>
                      </div>
                    )}
@@ -1968,7 +2116,7 @@
           const [books, setBooks] = useStickyState([], 'lifeDashboard-books');
           const [isConfirmingClear, setIsConfirmingClear] = useState(false);
           
-          // Enhanced Auth state listener with real-time sync
+          // Enhanced Auth state listener with proper sync
           useEffect(() => {
             if (auth) {
               const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
@@ -2024,14 +2172,6 @@
                   setUser({ uid: 'local', displayName: 'User', email: 'local@user.com' });
                   console.log('User signed out, using local storage only');
                   setSyncStatus('local');
-                  
-                  // Clear sensitive data when user signs out
-                  setTransactions([]);
-                  setTodos([]);
-                  setToBuy([]);
-                  setLendBorrow([]);
-                  setMovies([]);
-                  setBooks([]);
                 }
               });
               return () => unsubscribe();
@@ -2069,7 +2209,7 @@
             };
 
             // Use a timeout to debounce rapid changes
-            const timeoutId = setTimeout(syncData, 1000);
+            const timeoutId = setTimeout(syncData, 5000); // 5 second delay
             return () => clearTimeout(timeoutId);
           }, [transactions, todos, toBuy, lendBorrow, movies, books, settings, user]);
 
@@ -2093,14 +2233,6 @@
               }
               setUser({ uid: 'local', displayName: 'User', email: 'local@user.com' });
               setSyncStatus('local');
-              
-              // Clear all data when signing out for security
-              setTransactions([]);
-              setTodos([]);
-              setToBuy([]);
-              setLendBorrow([]);
-              setMovies([]);
-              setBooks([]);
             } catch (error) {
               console.error('Error signing out:', error);
             }
