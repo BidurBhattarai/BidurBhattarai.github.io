@@ -1876,7 +1876,9 @@
               });
               
               console.log('✅ All local storage cleared on logout');
-              onSignOut();
+               // INSTANT PAGE REFRESH
+              window.location.reload();
+                
             } catch (error) {
               console.error('Error signing out:', error);
             }
@@ -2324,4 +2326,5 @@
     </script>
   </body>
 </html>
+
 
