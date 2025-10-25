@@ -106,198 +106,6 @@
       const gregorianToNepali = (gregorianDate) => { const defaultDate = { year: 2081, month: 1, day: 1, monthName: 'Baishakh' }; if (!gregorianDate) return defaultDate; const inputDate = new Date(gregorianDate); inputDate.setUTCHours(0, 0, 0, 0); let nepaliYear; const sortedYears = Object.keys(NEPALI_YEAR_START_GREGORIAN_DATE).sort((a, b) => b - a); for (const year of sortedYears) { const startDate = new Date(NEPALI_YEAR_START_GREGORIAN_DATE[year]); startDate.setUTCHours(0, 0, 0, 0); if (inputDate >= startDate) { nepaliYear = parseInt(year); break; } } if (!nepaliYear) return defaultDate; const nepaliYearStartDate = new Date(NEPALI_YEAR_START_GREGORIAN_DATE[nepaliYear]); nepaliYearStartDate.setUTCHours(0, 0, 0, 0); const dayDiff = Math.round((inputDate - nepaliYearStartDate) / (1000 * 60 * 60 * 24)); let nepaliMonth = 1, nepaliDay = dayDiff + 1; const monthDaysData = NEPALI_MONTH_DATA[nepaliYear]; if (!monthDaysData) return defaultDate; for (let i = 0; i < monthDaysData.length; i++) { const daysInMonth = monthDaysData[i]; if (nepaliDay <= daysInMonth) break; else { nepaliDay -= daysInMonth; nepaliMonth++; } } return { year: nepaliYear, month: nepaliMonth, day: nepaliDay, monthName: NEPALI_MONTHS[nepaliMonth - 1] }; };
       const nepaliToGregorian = (nepaliYear, nepaliMonth, nepaliDay) => { const gregorianStartDateStr = NEPALI_YEAR_START_GREGORIAN_DATE[nepaliYear]; if (!gregorianStartDateStr) return new Date().toISOString().split('T')[0]; const gregorianStartDate = new Date(gregorianStartDateStr); let daysToAdd = 0; const monthData = NEPALI_MONTH_DATA[nepaliYear]; if (!monthData) return new Date().toISOString().split('T')[0]; for (let i = 0; i < nepaliMonth - 1; i++) { daysToAdd += monthData[i]; } daysToAdd += nepaliDay - 1; const resultDate = new Date(gregorianStartDate.getTime()); resultDate.setDate(gregorianStartDate.getDate() + daysToAdd); return resultDate.toISOString().split('T')[0]; };
       
-      // ENHANCED WORKOUT DATA WITH REAL EXERCISES AND CORRECT GIFs
-      const WORKOUT_DATA = {
-          'Chest': [
-              { 
-                  id: 1, 
-                  name: 'Barbell Bench Press', 
-                  description: 'Lie on a flat bench with feet firmly on the ground. Grip barbell slightly wider than shoulder width. Lower bar to chest, then press back up explosively. Keep your back flat and maintain proper form throughout the movement.',
-                  gif: 'https://i.ibb.co/0j1Wq2L/bench-press.gif',
-                  equipment: 'Barbell, Bench',
-                  difficulty: 'Intermediate'
-              },
-              { 
-                  id: 2, 
-                  name: 'Incline Dumbbell Press', 
-                  description: 'Lie on incline bench (30-45 degrees). Press dumbbells upward until arms are extended. Lower with control to chest level. This targets the upper chest muscles effectively.',
-                  gif: 'https://i.ibb.co/7YfL1ZR/incline-dumbbell-press.gif',
-                  equipment: 'Dumbbells, Incline Bench',
-                  difficulty: 'Beginner'
-              },
-              { 
-                  id: 3, 
-                  name: 'Push-ups', 
-                  description: 'Start in plank position with hands shoulder-width apart. Lower body until chest nearly touches floor, keeping elbows close to body. Push back up to start position while maintaining a straight body line.',
-                  gif: 'https://i.ibb.co/0QY1q1L/push-ups.gif',
-                  equipment: 'Bodyweight',
-                  difficulty: 'Beginner'
-              }
-          ],
-          'Back': [
-              { 
-                  id: 4, 
-                  name: 'Pull-ups', 
-                  description: 'Hang from bar with overhand grip, hands wider than shoulders. Pull body up until chin is above bar. Lower with control back to starting position. Engage your back muscles throughout the movement.',
-                  gif: 'https://i.ibb.co/0QY1q1L/pull-ups.gif',
-                  equipment: 'Pull-up Bar',
-                  difficulty: 'Advanced'
-              },
-              { 
-                  id: 5, 
-                  name: 'Bent Over Barbell Row', 
-                  description: 'Stand with feet shoulder-width apart, bend knees slightly. Hinge at hips until torso is nearly parallel to floor. Pull barbell to lower chest while squeezing shoulder blades together.',
-                  gif: 'https://i.ibb.co/0QY1q1L/bent-over-row.gif',
-                  equipment: 'Barbell',
-                  difficulty: 'Intermediate'
-              },
-              { 
-                  id: 6, 
-                  name: 'Lat Pulldown', 
-                  description: 'Sit at lat pulldown machine with knees secured under pads. Grip bar wide, pull down to upper chest while leaning back slightly. Focus on using your back muscles, not your arms.',
-                  gif: 'https://i.ibb.co/0QY1q1L/lat-pulldown.gif',
-                  equipment: 'Cable Machine',
-                  difficulty: 'Beginner'
-              }
-          ],
-          'Shoulders': [
-              { 
-                  id: 7, 
-                  name: 'Overhead Press', 
-                  description: 'Stand with barbell at shoulder level, hands slightly wider than shoulders. Press barbell overhead until arms are fully extended. Lower with control. Keep your core tight throughout the movement.',
-                  gif: 'https://i.ibb.co/0QY1q1L/overhead-press.gif',
-                  equipment: 'Barbell',
-                  difficulty: 'Intermediate'
-              },
-              { 
-                  id: 8, 
-                  name: 'Dumbbell Lateral Raise', 
-                  description: 'Stand holding dumbbells at sides with palms facing each other. Raise arms out to sides until parallel with floor. Lower with control. Use light weights and focus on proper form.',
-                  gif: 'https://i.ibb.co/0QY1q1L/lateral-raise.gif',
-                  equipment: 'Dumbbells',
-                  difficulty: 'Beginner'
-              }
-          ],
-          'Biceps': [
-              { 
-                  id: 9, 
-                  name: 'Barbell Curl', 
-                  description: 'Stand holding barbell with underhand grip, hands shoulder-width apart. Curl weight up to shoulder level while keeping elbows stationary. Squeeze biceps at the top, then lower with control.',
-                  gif: 'https://i.ibb.co/0QY1q1L/barbell-curl.gif',
-                  equipment: 'Barbell',
-                  difficulty: 'Beginner'
-              },
-              { 
-                  id: 10, 
-                  name: 'Hammer Curl', 
-                  description: 'Hold dumbbells with neutral grip (palms facing each other). Curl weights up while maintaining grip position. This targets both biceps and brachialis muscles effectively.',
-                  gif: 'https://i.ibb.co/0QY1q1L/hammer-curl.gif',
-                  equipment: 'Dumbbells',
-                  difficulty: 'Beginner'
-              }
-          ],
-          'Triceps': [
-              { 
-                  id: 11, 
-                  name: 'Tricep Pushdown', 
-                  description: 'Stand at cable machine with rope attachment. Push rope down until arms are fully extended. Focus on tricep contraction. Keep elbows close to your body throughout the movement.',
-                  gif: 'https://i.ibb.co/0QY1q1L/tricep-pushdown.gif',
-                  equipment: 'Cable Machine',
-                  difficulty: 'Beginner'
-              },
-              { 
-                  id: 12, 
-                  name: 'Close Grip Bench Press', 
-                  description: 'Similar to bench press but with hands closer together (about shoulder-width). This emphasizes tricep involvement in the pressing motion while still engaging chest muscles.',
-                  gif: 'https://i.ibb.co/0QY1q1L/close-grip-bench.gif',
-                  equipment: 'Barbell, Bench',
-                  difficulty: 'Intermediate'
-              }
-          ],
-          'Abs': [
-              { 
-                  id: 13, 
-                  name: 'Cable Crunch', 
-                  description: 'Kneel below cable machine with rope attachment. Crunch downward, contracting abs fully. Return with control. Focus on using your abdominal muscles, not pulling with your arms.',
-                  gif: 'https://i.ibb.co/0QY1q1L/cable-crunch.gif',
-                  equipment: 'Cable Machine',
-                  difficulty: 'Intermediate'
-              },
-              { 
-                  id: 14, 
-                  name: 'Russian Twists', 
-                  description: 'Sit on floor with knees bent and feet elevated. Lean back slightly and twist torso side to side while holding weight. Keep your core engaged throughout the movement.',
-                  gif: 'https://i.ibb.co/0QY1q1L/russian-twist.gif',
-                  equipment: 'Weight (optional)',
-                  difficulty: 'Beginner'
-              }
-          ],
-          'Quads': [
-              { 
-                  id: 15, 
-                  name: 'Barbell Squat', 
-                  description: 'Stand with barbell across upper back. Lower hips as if sitting in chair until thighs are parallel to floor. Drive back up through your heels. Keep your chest up and back straight throughout.',
-                  gif: 'https://i.ibb.co/0QY1q1L/barbell-squat.gif',
-                  equipment: 'Barbell',
-                  difficulty: 'Intermediate'
-              },
-              { 
-                  id: 16, 
-                  name: 'Leg Press', 
-                  description: 'Sit in leg press machine with feet shoulder-width apart on platform. Press platform away, then return with control. Do not lock your knees at the top of the movement.',
-                  gif: 'https://i.ibb.co/0QY1q1L/leg-press.gif',
-                  equipment: 'Leg Press Machine',
-                  difficulty: 'Beginner'
-              }
-          ],
-          'Hamstrings': [
-              { 
-                  id: 17, 
-                  name: 'Romanian Deadlift', 
-                  description: 'Stand holding barbell with overhand grip. Hinge at hips while keeping legs relatively straight. Lower barbell until you feel stretch in hamstrings. Return to standing position.',
-                  gif: 'https://i.ibb.co/0QY1q1L/romanian-deadlift.gif',
-                  equipment: 'Barbell',
-                  difficulty: 'Intermediate'
-              },
-              { 
-                  id: 18, 
-                  name: 'Lying Leg Curl', 
-                  description: 'Lie face down on leg curl machine with ankles under pads. Curl legs up towards glutes, squeezing hamstrings. Lower with control. Focus on the mind-muscle connection.',
-                  gif: 'https://i.ibb.co/0QY1q1L/leg-curl.gif',
-                  equipment: 'Leg Curl Machine',
-                  difficulty: 'Beginner'
-              }
-          ],
-          'Calves': [
-              { 
-                  id: 19, 
-                  name: 'Standing Calf Raise', 
-                  description: 'Stand on raised surface with heels hanging off. Raise up on toes as high as possible, then lower heels below platform. Perform slow, controlled movements for best results.',
-                  gif: 'https://i.ibb.co/0QY1q1L/calf-raise.gif',
-                  equipment: 'Calf Raise Machine or Bodyweight',
-                  difficulty: 'Beginner'
-              }
-          ],
-          'Glutes': [
-              { 
-                  id: 20, 
-                  name: 'Hip Thrust', 
-                  description: 'Sit on floor with upper back against bench, barbell across hips. Thrust hips upward until body forms straight line from shoulders to knees. Squeeze glutes at the top position.',
-                  gif: 'https://i.ibb.co/0QY1q1L/hip-thrust.gif',
-                  equipment: 'Barbell, Bench',
-                  difficulty: 'Intermediate'
-              },
-              { 
-                  id: 21, 
-                  name: 'Glute Bridge', 
-                  description: 'Lie on back with knees bent, feet flat on floor. Lift hips off floor until body forms straight line from shoulders to knees. Squeeze glutes at the top and hold for a moment.',
-                  gif: 'https://i.ibb.co/0QY1q1L/glute-bridge.gif',
-                  equipment: 'Bodyweight',
-                  difficulty: 'Beginner'
-              }
-          ]
-      };
-
       // =============================================
       // FIXED SYNC SYSTEM WITH PROPER CONFLICT RESOLUTION
       // =============================================
@@ -389,6 +197,8 @@
                   lendBorrow: resolveDataConflicts(data.lendBorrow || [], existingCloudData?.lendBorrow || [], 'lendBorrow'),
                   movies: resolveDataConflicts(data.movies || [], existingCloudData?.movies || [], 'movies'),
                   books: resolveDataConflicts(data.books || [], existingCloudData?.books || [], 'books'),
+                  habits: resolveDataConflicts(data.habits || [], existingCloudData?.habits || [], 'habits'),
+                  archive: resolveDataConflicts(data.archive || [], existingCloudData?.archive || [], 'archive'),
                   settings: { ...existingCloudData?.settings, ...data.settings },
                   lastSync: new Date().toISOString(),
                   lastSyncBy: 'device_' + Math.random().toString(36).substr(2, 9)
@@ -419,6 +229,8 @@
                           lendBorrow: cloudData.lendBorrow || [],
                           movies: cloudData.movies || [],
                           books: cloudData.books || [],
+                          habits: cloudData.habits || [],
+                          archive: cloudData.archive || [],
                           settings: cloudData.settings || {}
                       };
                   } else {
@@ -681,7 +493,11 @@
           }; 
 
           const deleteTodo = (id) => { 
-            setTodos(prev => prev.filter(t => t.id !== id)); 
+            const todo = todos.find(t => t.id === id);
+            if (todo) {
+              addToArchive('todo', todo);
+              setTodos(prev => prev.filter(t => t.id !== id));
+            }
           }; 
 
           const priorityStyles = { 
@@ -806,7 +622,11 @@
           setToBuy(prev => prev.map(item => item.id === id ? { ...item, purchased: !item.purchased, lastModified: Date.now() } : item)); 
         }; 
         const deleteItem = (id) => { 
-          setToBuy(prev => prev.filter(item => item.id !== id)); 
+          const item = toBuy.find(i => i.id === id);
+          if (item) {
+            addToArchive('toBuy', item);
+            setToBuy(prev => prev.filter(item => item.id !== id));
+          }
         }; 
         
         return ( 
@@ -878,128 +698,195 @@
         ); 
       };
 
-      // SIMPLIFIED BODY PART SELECTOR (No dummy body)
-      const BodyPartSelector = ({ onSelect }) => {
-        const [view, setView] = useState('front');
+      // HABIT TRACKER COMPONENT (REPLACES WORKOUT SECTION)
+      const HabitTracker = ({ habits, setHabits }) => {
+        const [newHabitName, setNewHabitName] = useState('');
+        const [selectedPeriod, setSelectedPeriod] = useState('daily');
         
-        const muscleGroups = {
-          front: ['Chest', 'Shoulders', 'Biceps', 'Abs', 'Quads', 'Calves'],
-          back: ['Back', 'Triceps', 'Glutes', 'Hamstrings', 'Calves']
-        };
-
-        const getMuscleColor = (muscle) => {
-          const colors = {
-            'Chest': 'bg-red-500', 'Shoulders': 'bg-blue-500', 'Biceps': 'bg-green-500',
-            'Abs': 'bg-yellow-500', 'Quads': 'bg-purple-500', 'Calves': 'bg-pink-500',
-            'Back': 'bg-indigo-500', 'Triceps': 'bg-teal-500', 'Glutes': 'bg-orange-500',
-            'Hamstrings': 'bg-cyan-500'
+        // Add new habit
+        const addHabit = (e) => {
+          e.preventDefault();
+          if (!newHabitName.trim()) return;
+          
+          const newHabit = {
+            id: Date.now(),
+            name: newHabitName,
+            period: selectedPeriod,
+            createdAt: new Date().toISOString(),
+            history: {},
+            streak: 0,
+            lastModified: Date.now()
           };
-          return colors[muscle] || 'bg-gray-500';
+          
+          setHabits(prev => [newHabit, ...prev]);
+          setNewHabitName('');
         };
-
+        
+        // Delete habit with archive
+        const deleteHabit = (id) => {
+          const habit = habits.find(h => h.id === id);
+          if (habit) {
+            addToArchive('habit', habit);
+            setHabits(prev => prev.filter(h => h.id !== id));
+          }
+        };
+        
+        // Track habit completion
+        const trackHabit = (habitId, date, status) => {
+          setHabits(prev => prev.map(habit => {
+            if (habit.id === habitId) {
+              const newHistory = { ...habit.history, [date]: status };
+              
+              // Calculate streak
+              const dates = Object.keys(newHistory).sort();
+              let currentStreak = 0;
+              let checkingDate = new Date();
+              
+              // Check backwards for consecutive completed habits
+              for (let i = 0; i < 365; i++) {
+                const dateStr = checkingDate.toISOString().split('T')[0];
+                if (newHistory[dateStr] === 'done') {
+                  currentStreak++;
+                } else if (newHistory[dateStr] === 'not-done') {
+                  break;
+                } else {
+                  // No entry - streak continues for skipped days, breaks for neutral
+                  if (dates.includes(dateStr)) break;
+                }
+                
+                checkingDate.setDate(checkingDate.getDate() - 1);
+              }
+              
+              return {
+                ...habit,
+                history: newHistory,
+                streak: currentStreak,
+                lastModified: Date.now()
+              };
+            }
+            return habit;
+          }));
+        };
+        
+        // Get status for today
+        const getTodayStatus = (habit) => {
+          const today = new Date().toISOString().split('T')[0];
+          return habit.history[today] || 'neutral';
+        };
+        
+        // Render status button
+        const StatusButton = ({ habit, date, currentStatus, onStatusChange }) => {
+          const statusConfig = {
+            'done': { label: '✓', class: 'bg-green-500 text-white', next: 'not-done' },
+            'not-done': { label: '✗', class: 'bg-red-500 text-white', next: 'neutral' },
+            'neutral': { label: '—', class: 'bg-gray-300 text-gray-700', next: 'done' }
+          };
+          
+          const config = statusConfig[currentStatus];
+          
+          return (
+            <button
+              onClick={() => onStatusChange(habit.id, date, config.next)}
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-all hover:scale-110 ${config.class}`}
+              title={`Mark as ${config.next === 'done' ? 'Done' : config.next === 'not-done' ? 'Not Done' : 'Neutral'}`}
+            >
+              {config.label}
+            </button>
+          );
+        };
+        
+        const today = new Date().toISOString().split('T')[0];
+        
         return (
           <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6">
-            <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-4 text-center">Workout Guide</h3>
+            <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-4">Habit Tracker</h3>
             
-            {/* View Toggle */}
-            <div className="flex justify-center mb-6">
-              <div className="bg-gray-200 dark:bg-gray-700 rounded-full p-1 flex">
-                <button 
-                  onClick={() => setView('front')} 
-                  className={`px-4 py-2 text-sm font-semibold rounded-full ${view === 'front' ? 'bg-teal-500 text-white' : 'text-gray-600 dark:text-gray-300'}`}
+            {/* Add Habit Form */}
+            <form onSubmit={addHabit} className="mb-6">
+              <div className="flex gap-2 mb-3">
+                <input
+                  type="text"
+                  value={newHabitName}
+                  onChange={(e) => setNewHabitName(e.target.value)}
+                  placeholder="Enter new habit..."
+                  className="flex-1 shadow-sm appearance-none border rounded-lg py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                />
+                <select
+                  value={selectedPeriod}
+                  onChange={(e) => setSelectedPeriod(e.target.value)}
+                  className="shadow-sm border rounded-lg py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
                 >
-                  Front Muscles
-                </button>
-                <button 
-                  onClick={() => setView('back')} 
-                  className={`px-4 py-2 text-sm font-semibold rounded-full ${view === 'back' ? 'bg-teal-500 text-white' : 'text-gray-600 dark:text-gray-300'}`}
-                >
-                  Back Muscles
-                </button>
+                  <option value="daily">Daily</option>
+                  <option value="weekly">Weekly</option>
+                  <option value="monthly">Monthly</option>
+                </select>
               </div>
-            </div>
-
-            {/* Muscle Groups Grid */}
-            <div className="grid grid-cols-2 gap-3">
-              {muscleGroups[view].map((muscle) => (
-                <button
-                  key={muscle}
-                  onClick={() => onSelect(muscle)}
-                  className={`p-4 rounded-xl text-white font-semibold text-center transition-transform hover:scale-105 active:scale-95 ${getMuscleColor(muscle)}`}
-                >
-                  {muscle}
-                </button>
-              ))}
-            </div>
-
-            <p className="text-center text-gray-600 dark:text-gray-400 mt-4 text-sm">
-              Tap on a muscle group to see exercises
-            </p>
-          </div>
-        );
-      };
-
-      const ExerciseItem = ({ exercise }) => {
-          return (
-            <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg mb-4">
-              <div className="flex justify-between items-start mb-3">
-                <h4 className="font-bold text-lg text-gray-800 dark:text-white">{exercise.name}</h4>
-                <div className="flex space-x-2">
-                  <span className={`px-2 py-1 text-xs rounded-full ${
-                      exercise.difficulty === 'Beginner' ? 'bg-green-100 text-green-800' :
-                      exercise.difficulty === 'Intermediate' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                  }`}>
-                      {exercise.difficulty}
-                  </span>
-                  <span className="px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full">
-                      {exercise.equipment}
-                  </span>
-                </div>
-              </div>
-              <div className="flex flex-col md:flex-row gap-4">
-                <div className="w-full md:w-1/2">
-                  <img 
-                      src={exercise.gif} 
-                      alt={`Animation of ${exercise.name}`} 
-                      className="w-full h-48 object-cover rounded-md bg-white border dark:border-gray-600"
-                      onError={(e) => {
-                          e.target.src = 'https://via.placeholder.com/300x200/4A5568/FFFFFF?text=Exercise+Demonstration';
-                      }}
-                  />
-                </div>
-                <div className="w-full md:w-1/2">
-                  <div className="bg-white dark:bg-gray-600 p-3 rounded-md">
-                      <h5 className="font-semibold text-gray-800 dark:text-white mb-2">Instructions:</h5>
-                      <p className="text-sm text-gray-600 dark:text-gray-300">{exercise.description}</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          );
-      };
-
-      const ExerciseListView = ({ bodyPart, onBack }) => {
-          const exercises = WORKOUT_DATA[bodyPart] || [];
-          return (
-            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6">
-              <div className="flex items-center mb-4">
-                <button onClick={onBack} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 mr-2 dark:text-white">
-                  <BackArrowIcon />
-                </button>
-                <h3 className="font-bold text-xl text-gray-800 dark:text-white">{bodyPart} Workouts</h3>
-              </div>
-              {exercises.length > 0 ? (
-                <div className="space-y-4">
-                  {exercises.map((ex) => (
-                    <ExerciseItem key={ex.id} exercise={ex} />
-                  ))}
-                </div>
+              <button type="submit" className="bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600">
+                Add Habit
+              </button>
+            </form>
+            
+            {/* Habits List */}
+            <div className="space-y-4">
+              {habits.length === 0 ? (
+                <p className="text-center text-gray-500 dark:text-gray-400 py-4">No habits yet. Add your first habit above!</p>
               ) : (
-                <p className="dark:text-white text-center">No exercises found for this muscle group.</p>
+                habits.map(habit => (
+                  <div key={habit.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
+                    <div className="flex justify-between items-center mb-3">
+                      <div>
+                        <h4 className="font-semibold text-gray-800 dark:text-white">{habit.name}</h4>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">{habit.period} • Streak: {habit.streak} days</p>
+                      </div>
+                      <button
+                        onClick={() => deleteHabit(habit.id)}
+                        className="text-gray-400 hover:text-red-500 p-1"
+                        title="Delete habit"
+                      >
+                        <DeleteIcon />
+                      </button>
+                    </div>
+                    
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">Today:</span>
+                      <StatusButton
+                        habit={habit}
+                        date={today}
+                        currentStatus={getTodayStatus(habit)}
+                        onStatusChange={trackHabit}
+                      />
+                    </div>
+                    
+                    {/* Recent History */}
+                    <div className="mt-3 flex gap-1 justify-center">
+                      {[...Array(7)].map((_, index) => {
+                        const date = new Date();
+                        date.setDate(date.getDate() - index);
+                        const dateStr = date.toISOString().split('T')[0];
+                        const status = habit.history[dateStr] || 'neutral';
+                        
+                        return (
+                          <div key={index} className="flex flex-col items-center">
+                            <span className="text-xs text-gray-400 mb-1">
+                              {date.getDate()}/{date.getMonth() + 1}
+                            </span>
+                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                              status === 'done' ? 'bg-green-500 text-white' :
+                              status === 'not-done' ? 'bg-red-500 text-white' :
+                              'bg-gray-300 text-gray-700'
+                            }`}>
+                              {status === 'done' ? '✓' : status === 'not-done' ? '✗' : '—'}
+                            </div>
+                          </div>
+                        );
+                      }).reverse()}
+                    </div>
+                  </div>
+                ))
               )}
             </div>
-          );
+          </div>
+        );
       };
 
       const Stopwatch = () => {
@@ -1141,13 +1028,22 @@
             lastModified: Date.now()
           };
           
+          // Auto-move from watchlist to watched if rated or has notes
+          if (view === 'watchlist' && (newMovie.rating || newMovie.notes)) {
+            movieToAdd.status = 'watched';
+          }
+          
           setMovies(prev => [movieToAdd, ...prev]);
           setNewMovie({ title: '', rating: '', notes: '', date: new Date().toISOString().split('T')[0] });
           setShowAddForm(false);
         };
 
         const deleteMovie = (id) => {
-          setMovies(prev => prev.filter(m => m.id !== id));
+          const movie = movies.find(m => m.id === id);
+          if (movie) {
+            addToArchive('movie', movie);
+            setMovies(prev => prev.filter(m => m.id !== id));
+          }
         };
 
         const shareList = () => {
@@ -1326,13 +1222,22 @@
             lastModified: Date.now()
           };
           
+          // Auto-move from readlist to read if rated or has notes
+          if (view === 'readlist' && (newBook.rating || newBook.notes)) {
+            bookToAdd.status = 'read';
+          }
+          
           setBooks(prev => [bookToAdd, ...prev]);
           setNewBook({ title: '', author: '', rating: '', notes: '', date: new Date().toISOString().split('T')[0] });
           setShowAddForm(false);
         };
 
         const deleteBook = (id) => {
-          setBooks(prev => prev.filter(b => b.id !== id));
+          const book = books.find(b => b.id === id);
+          if (book) {
+            addToArchive('book', book);
+            setBooks(prev => prev.filter(b => b.id !== id));
+          }
         };
 
         const shareList = () => {
@@ -1603,7 +1508,9 @@
         };
         
         const deleteTransaction = (id) => {
-          if (window.confirm('Are you sure you want to delete this transaction?')) {
+          const transaction = transactions.find(t => t.id === id);
+          if (transaction) {
+            addToArchive('transaction', transaction);
             setTransactions(prev => prev.filter(t => t.id !== id));
           }
         };
@@ -1802,20 +1709,147 @@
         ); 
       };
 
-      const GrowView = () => { 
-          const [selectedBodyPart, setSelectedBodyPart] = useState(null);
-          
-          if (selectedBodyPart) { 
-              return (<ExerciseListView bodyPart={selectedBodyPart} onBack={() => setSelectedBodyPart(null)} />);
-          }
+      // UPDATED GROWVIEW WITH HABIT TRACKER
+      const GrowView = ({ habits, setHabits }) => { 
+        return (
+          <React.Fragment>
+            <HabitTracker habits={habits} setHabits={setHabits} />
+            <Stopwatch />
+            <BMICalculator />
+          </React.Fragment>
+        ); 
+      };
 
+      // FIXED: LendBorrowView with delete/paid functionality
+      const LendBorrowView = ({ lendBorrow, setLendBorrow }) => {
+          const [type, setType] = useState('lend');
+          const [person, setPerson] = useState('');
+          const [amount, setAmount] = useState('');
+          const [description, setDescription] = useState('');
+          const [selectedPerson, setSelectedPerson] = useState('all');
+
+          const people = useMemo(() => [...new Set(lendBorrow.map(item => item.person))], [lendBorrow]);
+          
+          const filteredData = useMemo(() => {
+              if (selectedPerson === 'all') return lendBorrow;
+              return lendBorrow.filter(item => item.person === selectedPerson);
+          }, [lendBorrow, selectedPerson]);
+
+          const { totalLent, totalBorrowed } = useMemo(() => {
+              let lent = 0, borrowed = 0;
+              lendBorrow.forEach(item => {
+                  if(item.type === 'lend') lent += item.amount;
+                  else borrowed += item.amount;
+              });
+              return { totalLent: lent, totalBorrowed: borrowed };
+          }, [lendBorrow]);
+
+          const handleSubmit = (e) => {
+              e.preventDefault();
+              if (!person || !amount) return;
+              setLendBorrow(prev => [{
+                  id: Date.now(),
+                  type,
+                  person,
+                  amount: parseFloat(amount),
+                  description,
+                  date: new Date().toISOString(),
+                  lastModified: Date.now(),
+                  paid: false // Add paid status
+              }, ...prev]);
+              setPerson('');
+              setAmount('');
+              setDescription('');
+          };
+
+          // FIXED: Add toggle paid function
+          const togglePaid = (id) => {
+            setLendBorrow(prev => prev.map(item => 
+              item.id === id ? { ...item, paid: !item.paid, lastModified: Date.now() } : item
+            ));
+          };
+
+          // FIXED: Add delete function
+          const deleteEntry = (id) => {
+            const item = lendBorrow.find(i => i.id === id);
+            if (item) {
+              addToArchive('lendBorrow', item);
+              setLendBorrow(prev => prev.filter(item => item.id !== id));
+            }
+          };
+          
           return (
-            <React.Fragment>
-              <BodyPartSelector onSelect={setSelectedBodyPart} />
-              <Stopwatch />
-              <BMICalculator />
-            </React.Fragment>
-          ); 
+            <div className="space-y-6">
+                <div className="grid grid-cols-2 gap-4 text-center">
+                    <div className="bg-red-100 dark:bg-red-900/50 p-4 rounded-lg">
+                        <p className="text-sm text-red-800 dark:text-red-300">You Borrowed</p>
+                        <p className="text-2xl font-bold text-red-600 dark:text-red-400">रु {totalBorrowed.toLocaleString('en-NP')}</p>
+                    </div>
+                    <div className="bg-green-100 dark:bg-green-900/50 p-4 rounded-lg">
+                        <p className="text-sm text-green-800 dark:text-green-300">You Lent</p>
+                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">रु {totalLent.toLocaleString('en-NP')}</p>
+                    </div>
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6">
+                     <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-4">Add New Record</h3>
+                     <form onSubmit={handleSubmit} className="space-y-4">
+                        <div className="flex gap-2">
+                           <button type="button" onClick={() => setType('lend')} className={`flex-1 py-2 rounded-lg font-semibold ${type === 'lend' ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}>Lent</button>
+                           <button type="button" onClick={() => setType('borrow')} className={`flex-1 py-2 rounded-lg font-semibold ${type === 'borrow' ? 'bg-red-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}>Borrowed</button>
+                        </div>
+                        <input type="text" list="people" value={person} onChange={e => setPerson(e.target.value)} placeholder="Person's Name" required className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                        <datalist id="people">
+                            {people.map(p => <option key={p} value={p} />)}
+                        </datalist>
+                        <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Amount (रु)" required className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                        <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optional)" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
+                        <button type="submit" className="w-full bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600">Add Record</button>
+                     </form>
+                </div>
+                
+                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6">
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="font-bold text-lg text-gray-800 dark:text-white">History</h3>
+                        <select value={selectedPerson} onChange={e => setSelectedPerson(e.target.value)} className="p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                            <option value="all">All People</option>
+                            {people.map(p => <option key={p} value={p}>{p}</option>)}
+                        </select>
+                    </div>
+                    <div className="space-y-2">
+                        {filteredData.length === 0 ? <p className="text-center text-gray-500 py-4">No records yet.</p> : 
+                        [...filteredData].sort((a,b) => b.id - a.id).map(item => (
+                            <div key={item.id} className={`p-3 rounded-lg flex justify-between items-center ${item.type === 'lend' ? 'bg-green-50 dark:bg-green-900/30' : 'bg-red-50 dark:bg-red-900/30'} ${item.paid ? 'opacity-60' : ''}`}>
+                                <div>
+                                    <p className="font-semibold dark:text-white">{item.person}</p>
+                                    <p className="text-sm text-gray-600 dark:text-gray-400">{item.description || 'No description'}</p>
+                                    {item.paid && <span className="text-xs bg-green-500 text-white px-2 py-1 rounded">Paid</span>}
+                                </div>
+                                <div className="flex items-center space-x-2">
+                                    <p className={`font-bold ${item.type === 'lend' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                        {item.type === 'lend' ? '+' : '-'} रु {item.amount.toLocaleString('en-NP')}
+                                    </p>
+                                    <button 
+                                        onClick={() => togglePaid(item.id)}
+                                        className={`p-1 rounded ${item.paid ? 'bg-gray-500 text-white' : 'bg-green-500 text-white'}`}
+                                        title={item.paid ? 'Mark as unpaid' : 'Mark as paid'}
+                                    >
+                                        <CheckIcon />
+                                    </button>
+                                    <button 
+                                        onClick={() => deleteEntry(item.id)}
+                                        className="p-1 bg-red-500 text-white rounded"
+                                        title="Delete entry"
+                                    >
+                                        <DeleteIcon />
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+          );
       };
 
       // UPDATED: AccountView with instant local storage clear on logout
@@ -1867,6 +1901,8 @@
                 'lifeDashboard-lendBorrow',
                 'lifeDashboard-movies',
                 'lifeDashboard-books',
+                'lifeDashboard-habits',
+                'lifeDashboard-archive',
                 'lifeDashboard-lastModified'
               ];
               
@@ -1986,136 +2022,6 @@
           );
       };
 
-      // FIXED: LendBorrowView with delete/paid functionality
-      const LendBorrowView = ({ lendBorrow, setLendBorrow }) => {
-          const [type, setType] = useState('lend');
-          const [person, setPerson] = useState('');
-          const [amount, setAmount] = useState('');
-          const [description, setDescription] = useState('');
-          const [selectedPerson, setSelectedPerson] = useState('all');
-
-          const people = useMemo(() => [...new Set(lendBorrow.map(item => item.person))], [lendBorrow]);
-          
-          const filteredData = useMemo(() => {
-              if (selectedPerson === 'all') return lendBorrow;
-              return lendBorrow.filter(item => item.person === selectedPerson);
-          }, [lendBorrow, selectedPerson]);
-
-          const { totalLent, totalBorrowed } = useMemo(() => {
-              let lent = 0, borrowed = 0;
-              lendBorrow.forEach(item => {
-                  if(item.type === 'lend') lent += item.amount;
-                  else borrowed += item.amount;
-              });
-              return { totalLent: lent, totalBorrowed: borrowed };
-          }, [lendBorrow]);
-
-          const handleSubmit = (e) => {
-              e.preventDefault();
-              if (!person || !amount) return;
-              setLendBorrow(prev => [{
-                  id: Date.now(),
-                  type,
-                  person,
-                  amount: parseFloat(amount),
-                  description,
-                  date: new Date().toISOString(),
-                  lastModified: Date.now(),
-                  paid: false // Add paid status
-              }, ...prev]);
-              setPerson('');
-              setAmount('');
-              setDescription('');
-          };
-
-          // FIXED: Add toggle paid function
-          const togglePaid = (id) => {
-            setLendBorrow(prev => prev.map(item => 
-              item.id === id ? { ...item, paid: !item.paid, lastModified: Date.now() } : item
-            ));
-          };
-
-          // FIXED: Add delete function
-          const deleteEntry = (id) => {
-            if (window.confirm('Are you sure you want to delete this entry?')) {
-              setLendBorrow(prev => prev.filter(item => item.id !== id));
-            }
-          };
-          
-          return (
-            <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4 text-center">
-                    <div className="bg-red-100 dark:bg-red-900/50 p-4 rounded-lg">
-                        <p className="text-sm text-red-800 dark:text-red-300">You Borrowed</p>
-                        <p className="text-2xl font-bold text-red-600 dark:text-red-400">रु {totalBorrowed.toLocaleString('en-NP')}</p>
-                    </div>
-                    <div className="bg-green-100 dark:bg-green-900/50 p-4 rounded-lg">
-                        <p className="text-sm text-green-800 dark:text-green-300">You Lent</p>
-                        <p className="text-2xl font-bold text-green-600 dark:text-green-400">रु {totalLent.toLocaleString('en-NP')}</p>
-                    </div>
-                </div>
-
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6">
-                     <h3 className="font-bold text-lg text-gray-800 dark:text-white mb-4">Add New Record</h3>
-                     <form onSubmit={handleSubmit} className="space-y-4">
-                        <div className="flex gap-2">
-                           <button type="button" onClick={() => setType('lend')} className={`flex-1 py-2 rounded-lg font-semibold ${type === 'lend' ? 'bg-green-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}>Lent</button>
-                           <button type="button" onClick={() => setType('borrow')} className={`flex-1 py-2 rounded-lg font-semibold ${type === 'borrow' ? 'bg-red-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200'}`}>Borrowed</button>
-                        </div>
-                        <input type="text" list="people" value={person} onChange={e => setPerson(e.target.value)} placeholder="Person's Name" required className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
-                        <datalist id="people">
-                            {people.map(p => <option key={p} value={p} />)}
-                        </datalist>
-                        <input type="number" value={amount} onChange={e => setAmount(e.target.value)} placeholder="Amount (रु)" required className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
-                        <input type="text" value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optional)" className="w-full p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white" />
-                        <button type="submit" className="w-full bg-teal-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-teal-600">Add Record</button>
-                     </form>
-                </div>
-                
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6">
-                    <div className="flex justify-between items-center mb-4">
-                        <h3 className="font-bold text-lg text-gray-800 dark:text-white">History</h3>
-                        <select value={selectedPerson} onChange={e => setSelectedPerson(e.target.value)} className="p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                            <option value="all">All People</option>
-                            {people.map(p => <option key={p} value={p}>{p}</option>)}
-                        </select>
-                    </div>
-                    <div className="space-y-2">
-                        {filteredData.length === 0 ? <p className="text-center text-gray-500 py-4">No records yet.</p> : 
-                        [...filteredData].sort((a,b) => b.id - a.id).map(item => (
-                            <div key={item.id} className={`p-3 rounded-lg flex justify-between items-center ${item.type === 'lend' ? 'bg-green-50 dark:bg-green-900/30' : 'bg-red-50 dark:bg-red-900/30'} ${item.paid ? 'opacity-60' : ''}`}>
-                                <div>
-                                    <p className="font-semibold dark:text-white">{item.person}</p>
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">{item.description || 'No description'}</p>
-                                    {item.paid && <span className="text-xs bg-green-500 text-white px-2 py-1 rounded">Paid</span>}
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                    <p className={`font-bold ${item.type === 'lend' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                        {item.type === 'lend' ? '+' : '-'} रु {item.amount.toLocaleString('en-NP')}
-                                    </p>
-                                    <button 
-                                        onClick={() => togglePaid(item.id)}
-                                        className={`p-1 rounded ${item.paid ? 'bg-gray-500 text-white' : 'bg-green-500 text-white'}`}
-                                        title={item.paid ? 'Mark as unpaid' : 'Mark as paid'}
-                                    >
-                                        <CheckIcon />
-                                    </button>
-                                    <button 
-                                        onClick={() => deleteEntry(item.id)}
-                                        className="p-1 bg-red-500 text-white rounded"
-                                        title="Delete entry"
-                                    >
-                                        <DeleteIcon />
-                                    </button>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-            </div>
-          );
-      };
-
       // --- MAIN APP COMPONENT ---
       const App = () => {
           const [currentView, setCurrentView] = useState('money'); 
@@ -2150,8 +2056,20 @@
           const [lendBorrow, setLendBorrow] = useStickyState([], 'lifeDashboard-lendBorrow');
           const [movies, setMovies] = useStickyState([], 'lifeDashboard-movies');
           const [books, setBooks] = useStickyState([], 'lifeDashboard-books');
+          const [habits, setHabits] = useStickyState([], 'lifeDashboard-habits');
+          const [archive, setArchive] = useStickyState([], 'lifeDashboard-archive');
           const [isConfirmingClear, setIsConfirmingClear] = useState(false);
           
+          // Archive system function
+          const addToArchive = (itemType, item) => {
+            const archivedItem = {
+              ...item,
+              archivedAt: new Date().toISOString(),
+              originalType: itemType
+            };
+            setArchive(prev => [archivedItem, ...prev]);
+          };
+
           // Enhanced Auth state listener with proper sync
           useEffect(() => {
             if (auth) {
@@ -2177,6 +2095,8 @@
                     if (cloudData.lendBorrow) setLendBorrow(cloudData.lendBorrow);
                     if (cloudData.movies) setMovies(cloudData.movies);
                     if (cloudData.books) setBooks(cloudData.books);
+                    if (cloudData.habits) setHabits(cloudData.habits);
+                    if (cloudData.archive) setArchive(cloudData.archive);
                     if (cloudData.settings) {
                       setSettings(prev => ({ ...prev, ...cloudData.settings }));
                     }
@@ -2197,6 +2117,8 @@
                     if (cloudData.lendBorrow) setLendBorrow(cloudData.lendBorrow);
                     if (cloudData.movies) setMovies(cloudData.movies);
                     if (cloudData.books) setBooks(cloudData.books);
+                    if (cloudData.habits) setHabits(cloudData.habits);
+                    if (cloudData.archive) setArchive(cloudData.archive);
                     if (cloudData.settings) {
                       setSettings(prev => ({ ...prev, ...cloudData.settings }));
                     }
@@ -2227,6 +2149,8 @@
                   lendBorrow,
                   movies,
                   books,
+                  habits,
+                  archive,
                   settings,
                   lastSync: new Date().toISOString(),
                   lastSyncBy: 'device_' + Math.random().toString(36).substr(2, 9)
@@ -2247,7 +2171,7 @@
             // Use a timeout to debounce rapid changes
             const timeoutId = setTimeout(syncData, 5000); // 5 second delay
             return () => clearTimeout(timeoutId);
-          }, [transactions, todos, toBuy, lendBorrow, movies, books, settings, user]);
+          }, [transactions, todos, toBuy, lendBorrow, movies, books, habits, archive, settings, user]);
 
           useEffect(() => {
               if (settings.theme === 'dark') {
@@ -2314,7 +2238,12 @@
                           setBooks={setBooks}
                         />
                       )}
-                      {currentView === 'grow' && <GrowView />}
+                      {currentView === 'grow' && (
+                        <GrowView 
+                          habits={habits}
+                          setHabits={setHabits}
+                        />
+                      )}
                       {currentView === 'account' && (
                         <AccountView 
                           settings={settings} 
