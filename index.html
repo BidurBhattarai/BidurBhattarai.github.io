@@ -39,6 +39,13 @@
         .scroll-container {
             -webkit-overflow-scrolling: touch;
         }
+        /* Streak circle animation */
+        .streak-circle {
+            transition: all 0.3s ease;
+        }
+        .streak-circle:hover {
+            transform: scale(1.05);
+        }
     </style>
 </head>
 <body class="scroll-container">
@@ -96,13 +103,14 @@
       const BookIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>);
       const ShareIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" /></svg>);
       const CheckIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>);
+      const FireIcon = () => (<svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clipRule="evenodd"/></svg>);
 
       // --- DATA & HELPERS ---
       const CATEGORIES = { expense: [{ id: 'food', name: 'Food', Icon: FoodIcon, color: '#FF6384' },{ id: 'transport', name: 'Transport', Icon: TransportIcon, color: '#36A2EB' },{ id: 'home', name: 'Home', Icon: OtherIcon, color: '#FFCE56' },{ id: 'bills', name: 'Bills', Icon: BillsIcon, color: '#4BC0C0' },{ id: 'shopping', name: 'Shopping', Icon: ShoppingIcon, color: '#9966FF' },{ id: 'fun', name: 'Fun', Icon: FunIcon, color: '#FF9F40' },{ id: 'health', name: 'Health', Icon: HealthIcon, color: '#E83E8C' },{ id: 'other_expense', name: 'Other', Icon: OtherIcon, color: '#6C757D' }], income: [{ id: 'salary', name: 'Salary', Icon: SalaryIcon },{ id: 'gift', name: 'Gift', Icon: GiftIcon },{ id: 'other_income', name: 'Other', Icon: OtherIcon }] };
       const ALL_CATEGORIES = [...CATEGORIES.expense, ...CATEGORIES.income].reduce((acc, cat) => { acc[cat.id] = cat; return acc; }, {});
       const NEPALI_MONTH_DATA = { 2070: [30, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], 2071: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], 2072: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], 2073: [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 30, 30], 2074: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], 2075: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], 2076: [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 30, 30], 2077: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], 2078: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], 2079: [31, 31, 32, 32, 31, 30, 29, 30, 29, 30, 29, 31], 2080: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], 2081: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], 2082: [30, 32, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], 2083: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], 2084: [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 30, 30], 2085: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], 2086: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], 2087: [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 30, 30], 2088: [31, 31, 32, 31, 31, 31, 30, 29, 30, 29, 30, 30], 2089: [31, 32, 31, 32, 31, 30, 30, 30, 29, 29, 30, 31], 2090: [31, 32, 31, 32, 31, 30, 30, 30, 29, 30, 30, 30] };
       const NEPALI_MONTHS = ['Baishakh','Jestha','Ashadh','Shrawan','Bhadra','Ashwin','Kartik','Mangsir','Poush','Magh','Falgun','Chaitra'];
-      const NEPALI_YEAR_START_GREGORIAN_DATE = { 2070: '2013-04-14', 2071: '2014-04-14', 2072: '2015-04-14', 2073: '2016-04-13', 2074: '2017-04-14', 2075: '2018-04-14', 2076: '2019-04-14', 2077: '2020-04-13', 2078: '2021-04-14', 2079: '2022-04-14', 2080: '2023-04-14', 2081: '2024-04-13', 2082: '2025-04-14', 2083: '2026-04-14', 2084: '2027-04-14', 2085: '2028-04-13', 2086: '2029-04-14', 2087: '2030-04-14', 2088: '2031-04-14', 2089: '2032-04-13', 2090: '2033-04-14' };
+      const NEPALI_YEAR_START_GREGORIAN_DATE = { 2070: '2013-04-14', 2071: '2014-04-14', 2072: '2015-04-14', 2073: '2016-04-13', 2074: '2017-04-14', 2075: '2018-04-14', 2076: '2019-04-14', 2077: '2020-04-13', 2080: '2023-04-14', 2081: '2024-04-13', 2082: '2025-04-14', 2083: '2026-04-14', 2084: '2027-04-14', 2085: '2028-04-13', 2086: '2029-04-14', 2087: '2030-04-14', 2088: '2031-04-14', 2089: '2032-04-13', 2090: '2033-04-14' };
       const gregorianToNepali = (gregorianDate) => { const defaultDate = { year: 2081, month: 1, day: 1, monthName: 'Baishakh' }; if (!gregorianDate) return defaultDate; const inputDate = new Date(gregorianDate); inputDate.setUTCHours(0, 0, 0, 0); let nepaliYear; const sortedYears = Object.keys(NEPALI_YEAR_START_GREGORIAN_DATE).sort((a, b) => b - a); for (const year of sortedYears) { const startDate = new Date(NEPALI_YEAR_START_GREGORIAN_DATE[year]); startDate.setUTCHours(0, 0, 0, 0); if (inputDate >= startDate) { nepaliYear = parseInt(year); break; } } if (!nepaliYear) return defaultDate; const nepaliYearStartDate = new Date(NEPALI_YEAR_START_GREGORIAN_DATE[nepaliYear]); nepaliYearStartDate.setUTCHours(0, 0, 0, 0); const dayDiff = Math.round((inputDate - nepaliYearStartDate) / (1000 * 60 * 60 * 24)); let nepaliMonth = 1, nepaliDay = dayDiff + 1; const monthDaysData = NEPALI_MONTH_DATA[nepaliYear]; if (!monthDaysData) return defaultDate; for (let i = 0; i < monthDaysData.length; i++) { const daysInMonth = monthDaysData[i]; if (nepaliDay <= daysInMonth) break; else { nepaliDay -= daysInMonth; nepaliMonth++; } } return { year: nepaliYear, month: nepaliMonth, day: nepaliDay, monthName: NEPALI_MONTHS[nepaliMonth - 1] }; };
       const nepaliToGregorian = (nepaliYear, nepaliMonth, nepaliDay) => { const gregorianStartDateStr = NEPALI_YEAR_START_GREGORIAN_DATE[nepaliYear]; if (!gregorianStartDateStr) return new Date().toISOString().split('T')[0]; const gregorianStartDate = new Date(gregorianStartDateStr); let daysToAdd = 0; const monthData = NEPALI_MONTH_DATA[nepaliYear]; if (!monthData) return new Date().toISOString().split('T')[0]; for (let i = 0; i < nepaliMonth - 1; i++) { daysToAdd += monthData[i]; } daysToAdd += nepaliDay - 1; const resultDate = new Date(gregorianStartDate.getTime()); resultDate.setDate(gregorianStartDate.getDate() + daysToAdd); return resultDate.toISOString().split('T')[0]; };
       
@@ -453,7 +461,7 @@
       };
       
       // FIXED TODO LIST - SIMPLIFIED "ADD" BUTTON
-      const ToDoList = ({ todos, setTodos }) => { 
+      const ToDoList = ({ todos, setTodos, addToArchive }) => { 
           const [newTodoText, setNewTodoText] = useState(''); 
           const [newTodoPriority, setNewTodoPriority] = useState('medium'); 
           const [activeTab, setActiveTab] = useState('today'); 
@@ -610,7 +618,7 @@
           );
       };
 
-      const ToBuyList = ({ toBuy, setToBuy }) => { 
+      const ToBuyList = ({ toBuy, setToBuy, addToArchive }) => { 
         const [newItemText, setNewItemText] = useState(''); 
         const addItem = (e) => { 
           e.preventDefault(); 
@@ -698,10 +706,11 @@
         ); 
       };
 
-      // HABIT TRACKER COMPONENT (REPLACES WORKOUT SECTION)
-      const HabitTracker = ({ habits, setHabits }) => {
+      // UPDATED HABIT TRACKER COMPONENT
+      const HabitTracker = ({ habits, setHabits, addToArchive }) => {
         const [newHabitName, setNewHabitName] = useState('');
         const [selectedPeriod, setSelectedPeriod] = useState('daily');
+        const [selectedHabit, setSelectedHabit] = useState(null);
         
         // Add new habit
         const addHabit = (e) => {
@@ -738,34 +747,41 @@
               const newHistory = { ...habit.history, [date]: status };
               
               // Calculate streak
-              const dates = Object.keys(newHistory).sort();
-              let currentStreak = 0;
-              let checkingDate = new Date();
-              
-              // Check backwards for consecutive completed habits
-              for (let i = 0; i < 365; i++) {
-                const dateStr = checkingDate.toISOString().split('T')[0];
-                if (newHistory[dateStr] === 'done') {
-                  currentStreak++;
-                } else if (newHistory[dateStr] === 'not-done') {
-                  break;
-                } else {
-                  // No entry - streak continues for skipped days, breaks for neutral
-                  if (dates.includes(dateStr)) break;
-                }
-                
-                checkingDate.setDate(checkingDate.getDate() - 1);
-              }
+              const streak = calculateStreak(newHistory);
               
               return {
                 ...habit,
                 history: newHistory,
-                streak: currentStreak,
+                streak: streak,
                 lastModified: Date.now()
               };
             }
             return habit;
           }));
+        };
+
+        // Calculate streak from history
+        const calculateStreak = (history) => {
+          const dates = Object.keys(history).sort();
+          let currentStreak = 0;
+          let checkingDate = new Date();
+          
+          // Check backwards for consecutive completed habits
+          for (let i = 0; i < 365; i++) {
+            const dateStr = checkingDate.toISOString().split('T')[0];
+            if (history[dateStr] === 'done') {
+              currentStreak++;
+            } else if (history[dateStr] === 'not-done') {
+              break;
+            } else {
+              // No entry - streak continues for skipped days, breaks for neutral
+              if (dates.includes(dateStr)) break;
+            }
+            
+            checkingDate.setDate(checkingDate.getDate() - 1);
+          }
+          
+          return currentStreak;
         };
         
         // Get status for today
@@ -792,6 +808,122 @@
             >
               {config.label}
             </button>
+          );
+        };
+
+        // Streak circle component
+        const StreakCircle = ({ habit }) => {
+          const maxStreak = 30; // Maximum streak for circle calculation
+          const percentage = Math.min((habit.streak / maxStreak) * 100, 100);
+          const radius = 16;
+          const circumference = 2 * Math.PI * radius;
+          const strokeDasharray = circumference;
+          const strokeDashoffset = circumference - (percentage / 100) * circumference;
+
+          return (
+            <div className="relative">
+              <svg className="w-10 h-10 transform -rotate-90" onClick={() => setSelectedHabit(habit)}>
+                <circle
+                  cx="20"
+                  cy="20"
+                  r={radius}
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  fill="transparent"
+                  className="text-gray-200 dark:text-gray-700"
+                />
+                <circle
+                  cx="20"
+                  cy="20"
+                  r={radius}
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  fill="transparent"
+                  strokeDasharray={strokeDasharray}
+                  strokeDashoffset={strokeDashoffset}
+                  className="text-orange-500 transition-all duration-300 ease-in-out"
+                  style={{ strokeLinecap: 'round' }}
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center" onClick={() => setSelectedHabit(habit)}>
+                <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{habit.streak}</span>
+              </div>
+            </div>
+          );
+        };
+
+        // Habit history modal
+        const HabitHistoryModal = ({ habit, onClose }) => {
+          if (!habit) return null;
+
+          const today = new Date();
+          const last30Days = Array.from({ length: 30 }, (_, i) => {
+            const date = new Date(today);
+            date.setDate(today.getDate() - i);
+            return date.toISOString().split('T')[0];
+          }).reverse();
+
+          return (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50" onClick={onClose}>
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md m-4" onClick={e => e.stopPropagation()}>
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="text-xl font-bold text-gray-800 dark:text-white">{habit.name} - History</h3>
+                  <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <div className="mb-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-gray-600 dark:text-gray-400">Current Streak:</span>
+                    <div className="flex items-center space-x-1">
+                      <FireIcon className="text-orange-500" />
+                      <span className="font-bold text-orange-500">{habit.streak} days</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-7 gap-2">
+                  {last30Days.map(date => {
+                    const status = habit.history[date] || 'neutral';
+                    const dayDate = new Date(date);
+                    const isToday = date === new Date().toISOString().split('T')[0];
+                    
+                    return (
+                      <div key={date} className="flex flex-col items-center">
+                        <span className={`text-xs mb-1 ${isToday ? 'text-teal-500 font-bold' : 'text-gray-400'}`}>
+                          {dayDate.getDate()}
+                        </span>
+                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
+                          status === 'done' ? 'bg-green-500 text-white' :
+                          status === 'not-done' ? 'bg-red-500 text-white' :
+                          'bg-gray-300 text-gray-700'
+                        }`}>
+                          {status === 'done' ? '✓' : status === 'not-done' ? '✗' : '—'}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <div className="mt-4 flex justify-center space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-green-500 rounded"></div>
+                    <span>Done</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-red-500 rounded"></div>
+                    <span>Not Done</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <div className="w-3 h-3 bg-gray-300 rounded"></div>
+                    <span>Neutral</span>
+                  </div>
+                </div>
+              </div>
+            </div>
           );
         };
         
@@ -827,64 +959,52 @@
             </form>
             
             {/* Habits List */}
-            <div className="space-y-4">
+            <div className="space-y-3">
               {habits.length === 0 ? (
                 <p className="text-center text-gray-500 dark:text-gray-400 py-4">No habits yet. Add your first habit above!</p>
               ) : (
                 habits.map(habit => (
-                  <div key={habit.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-                    <div className="flex justify-between items-center mb-3">
-                      <div>
-                        <h4 className="font-semibold text-gray-800 dark:text-white">{habit.name}</h4>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">{habit.period} • Streak: {habit.streak} days</p>
-                      </div>
-                      <button
-                        onClick={() => deleteHabit(habit.id)}
-                        className="text-gray-400 hover:text-red-500 p-1"
-                        title="Delete habit"
-                      >
-                        <DeleteIcon />
-                      </button>
-                    </div>
-                    
+                  <div key={habit.id} className="border border-gray-200 dark:border-gray-600 rounded-lg p-3">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-gray-600 dark:text-gray-400">Today:</span>
-                      <StatusButton
-                        habit={habit}
-                        date={today}
-                        currentStatus={getTodayStatus(habit)}
-                        onStatusChange={trackHabit}
-                      />
-                    </div>
-                    
-                    {/* Recent History */}
-                    <div className="mt-3 flex gap-1 justify-center">
-                      {[...Array(7)].map((_, index) => {
-                        const date = new Date();
-                        date.setDate(date.getDate() - index);
-                        const dateStr = date.toISOString().split('T')[0];
-                        const status = habit.history[dateStr] || 'neutral';
-                        
-                        return (
-                          <div key={index} className="flex flex-col items-center">
-                            <span className="text-xs text-gray-400 mb-1">
-                              {date.getDate()}/{date.getMonth() + 1}
-                            </span>
-                            <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
-                              status === 'done' ? 'bg-green-500 text-white' :
-                              status === 'not-done' ? 'bg-red-500 text-white' :
-                              'bg-gray-300 text-gray-700'
-                            }`}>
-                              {status === 'done' ? '✓' : status === 'not-done' ? '✗' : '—'}
-                            </div>
-                          </div>
-                        );
-                      }).reverse()}
+                      {/* Habit Name and Status */}
+                      <div className="flex items-center space-x-3 flex-1">
+                        <StatusButton
+                          habit={habit}
+                          date={today}
+                          currentStatus={getTodayStatus(habit)}
+                          onStatusChange={trackHabit}
+                        />
+                        <span className="font-semibold text-gray-800 dark:text-white">{habit.name}</span>
+                      </div>
+                      
+                      {/* Streak Circle and Info */}
+                      <div className="flex items-center space-x-2">
+                        <StreakCircle habit={habit} />
+                        <div className="flex items-center space-x-1">
+                          <FireIcon className="text-orange-500 w-4 h-4" />
+                          <span className="text-sm font-bold text-orange-500">{habit.streak}</span>
+                        </div>
+                        <button
+                          onClick={() => deleteHabit(habit.id)}
+                          className="text-gray-400 hover:text-red-500 p-1 ml-2"
+                          title="Delete habit"
+                        >
+                          <DeleteIcon />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))
               )}
             </div>
+
+            {/* Habit History Modal */}
+            {selectedHabit && (
+              <HabitHistoryModal 
+                habit={selectedHabit} 
+                onClose={() => setSelectedHabit(null)} 
+              />
+            )}
           </div>
         );
       };
@@ -1003,13 +1123,13 @@
       };
 
       // =============================================
-      // NEW MOVIES AND BOOKS COMPONENTS
+      // UPDATED MOVIES AND BOOKS COMPONENTS
       // =============================================
       
-      const MoviesSection = ({ movies, setMovies }) => {
+      const MoviesSection = ({ movies, setMovies, addToArchive }) => {
         const [view, setView] = useState('watched');
         const [showAddForm, setShowAddForm] = useState(false);
-        const [newMovie, setNewMovie] = useState({ title: '', rating: '', notes: '', date: new Date().toISOString().split('T')[0] });
+        const [newMovie, setNewMovie] = useState({ title: '', status: 'watchlist' });
 
         const watchedMovies = useMemo(() => movies.filter(m => m.status === 'watched'), [movies]);
         const watchlistMovies = useMemo(() => movies.filter(m => m.status === 'watchlist'), [movies]);
@@ -1021,21 +1141,26 @@
           const movieToAdd = {
             id: Date.now(),
             title: newMovie.title,
-            rating: newMovie.rating ? parseInt(newMovie.rating) : null,
-            notes: newMovie.notes,
-            date: newMovie.date,
-            status: view,
+            status: newMovie.status,
+            date: new Date().toISOString().split('T')[0],
             lastModified: Date.now()
           };
           
-          // Auto-move from watchlist to watched if rated or has notes
-          if (view === 'watchlist' && (newMovie.rating || newMovie.notes)) {
-            movieToAdd.status = 'watched';
-          }
-          
           setMovies(prev => [movieToAdd, ...prev]);
-          setNewMovie({ title: '', rating: '', notes: '', date: new Date().toISOString().split('T')[0] });
+          setNewMovie({ title: '', status: 'watchlist' });
           setShowAddForm(false);
+        };
+
+        const markAsWatched = (id) => {
+          setMovies(prev => prev.map(movie => 
+            movie.id === id ? { ...movie, status: 'watched', lastModified: Date.now() } : movie
+          ));
+        };
+
+        const markAsWatchlist = (id) => {
+          setMovies(prev => prev.map(movie => 
+            movie.id === id ? { ...movie, status: 'watchlist', lastModified: Date.now() } : movie
+          ));
         };
 
         const deleteMovie = (id) => {
@@ -1049,7 +1174,7 @@
         const shareList = () => {
           const currentList = view === 'watched' ? watchedMovies : watchlistMovies;
           const listText = currentList.map((movie, index) => 
-            `${index + 1}. ${movie.title}${movie.rating ? ` (${movie.rating}/10)` : ''}${movie.notes ? ` - ${movie.notes}` : ''}`
+            `${index + 1}. ${movie.title}`
           ).join('\n');
           
           const shareContent = `${view === 'watched' ? 'Watched Movies' : 'Watchlist'}:\n\n${listText}`;
@@ -1108,7 +1233,7 @@
             {showAddForm && (
               <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-40">
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md m-4">
-                  <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Add {view === 'watched' ? 'Watched' : 'Watchlist'} Movie</h3>
+                  <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Add Movie</h3>
                   <form onSubmit={addMovie}>
                     <div className="mb-4">
                       <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Title *</label>
@@ -1120,34 +1245,16 @@
                         required 
                       />
                     </div>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Rating (1-10)</label>
-                      <input 
-                        type="number" 
-                        min="1" 
-                        max="10" 
-                        value={newMovie.rating} 
-                        onChange={e => setNewMovie(prev => ({ ...prev, rating: e.target.value }))}
-                        className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Notes</label>
-                      <textarea 
-                        value={newMovie.notes} 
-                        onChange={e => setNewMovie(prev => ({ ...prev, notes: e.target.value }))}
-                        className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                        rows="3"
-                      />
-                    </div>
                     <div className="mb-6">
-                      <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Date</label>
-                      <input 
-                        type="date" 
-                        value={newMovie.date} 
-                        onChange={e => setNewMovie(prev => ({ ...prev, date: e.target.value }))}
+                      <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Status</label>
+                      <select 
+                        value={newMovie.status}
+                        onChange={e => setNewMovie(prev => ({ ...prev, status: e.target.value }))}
                         className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                      />
+                      >
+                        <option value="watchlist">Watchlist</option>
+                        <option value="watched">Watched</option>
+                      </select>
                     </div>
                     <div className="flex items-center justify-between">
                       <button type="button" onClick={() => setShowAddForm(false)} className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
@@ -1170,26 +1277,33 @@
                     <div className="flex justify-between items-start">
                       <div className="flex-grow">
                         <h4 className="font-semibold text-gray-800 dark:text-white">{movie.title}</h4>
-                        <div className="flex items-center space-x-4 mt-1">
-                          {movie.rating && (
-                            <span className="text-sm bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded">
-                              {movie.rating}/10
-                            </span>
-                          )}
-                          <span className="text-sm text-gray-500 dark:text-gray-400">
-                            {new Date(movie.date).toLocaleDateString()}
-                          </span>
-                        </div>
-                        {movie.notes && (
-                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">{movie.notes}</p>
-                        )}
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {new Date(movie.date).toLocaleDateString()}
+                        </span>
                       </div>
-                      <button 
-                        onClick={() => deleteMovie(movie.id)}
-                        className="text-gray-400 hover:text-red-500 ml-2"
-                      >
-                        <DeleteIcon />
-                      </button>
+                      <div className="flex space-x-2 ml-2">
+                        {view === 'watchlist' ? (
+                          <button 
+                            onClick={() => markAsWatched(movie.id)}
+                            className="bg-green-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-600"
+                          >
+                            Mark Watched
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => markAsWatchlist(movie.id)}
+                            className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600"
+                          >
+                            Move to Watchlist
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => deleteMovie(movie.id)}
+                          className="text-gray-400 hover:text-red-500"
+                        >
+                          <DeleteIcon />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -1199,10 +1313,10 @@
         );
       };
 
-      const BooksSection = ({ books, setBooks }) => {
+      const BooksSection = ({ books, setBooks, addToArchive }) => {
         const [view, setView] = useState('read');
         const [showAddForm, setShowAddForm] = useState(false);
-        const [newBook, setNewBook] = useState({ title: '', author: '', rating: '', notes: '', date: new Date().toISOString().split('T')[0] });
+        const [newBook, setNewBook] = useState({ title: '', author: '', status: 'readlist' });
 
         const readBooks = useMemo(() => books.filter(b => b.status === 'read'), [books]);
         const readlistBooks = useMemo(() => books.filter(b => b.status === 'readlist'), [books]);
@@ -1215,21 +1329,26 @@
             id: Date.now(),
             title: newBook.title,
             author: newBook.author,
-            rating: newBook.rating ? parseInt(newBook.rating) : null,
-            notes: newBook.notes,
-            date: newBook.date,
-            status: view,
+            status: newBook.status,
+            date: new Date().toISOString().split('T')[0],
             lastModified: Date.now()
           };
           
-          // Auto-move from readlist to read if rated or has notes
-          if (view === 'readlist' && (newBook.rating || newBook.notes)) {
-            bookToAdd.status = 'read';
-          }
-          
           setBooks(prev => [bookToAdd, ...prev]);
-          setNewBook({ title: '', author: '', rating: '', notes: '', date: new Date().toISOString().split('T')[0] });
+          setNewBook({ title: '', author: '', status: 'readlist' });
           setShowAddForm(false);
+        };
+
+        const markAsRead = (id) => {
+          setBooks(prev => prev.map(book => 
+            book.id === id ? { ...book, status: 'read', lastModified: Date.now() } : book
+          ));
+        };
+
+        const markAsReadlist = (id) => {
+          setBooks(prev => prev.map(book => 
+            book.id === id ? { ...book, status: 'readlist', lastModified: Date.now() } : book
+          ));
         };
 
         const deleteBook = (id) => {
@@ -1243,7 +1362,7 @@
         const shareList = () => {
           const currentList = view === 'read' ? readBooks : readlistBooks;
           const listText = currentList.map((book, index) => 
-            `${index + 1}. "${book.title}" by ${book.author}${book.rating ? ` (${book.rating}/10)` : ''}${book.notes ? ` - ${book.notes}` : ''}`
+            `${index + 1}. "${book.title}" by ${book.author}`
           ).join('\n');
           
           const shareContent = `${view === 'read' ? 'Read Books' : 'Reading List'}:\n\n${listText}`;
@@ -1302,7 +1421,7 @@
             {showAddForm && (
               <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-40">
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md m-4">
-                  <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Add {view === 'read' ? 'Read' : 'Reading List'} Book</h3>
+                  <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Add Book</h3>
                   <form onSubmit={addBook}>
                     <div className="mb-4">
                       <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Title *</label>
@@ -1324,34 +1443,16 @@
                         required 
                       />
                     </div>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Rating (1-10)</label>
-                      <input 
-                        type="number" 
-                        min="1" 
-                        max="10" 
-                        value={newBook.rating} 
-                        onChange={e => setNewBook(prev => ({ ...prev, rating: e.target.value }))}
-                        className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Notes</label>
-                      <textarea 
-                        value={newBook.notes} 
-                        onChange={e => setNewBook(prev => ({ ...prev, notes: e.target.value }))}
-                        className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                        rows="3"
-                      />
-                    </div>
                     <div className="mb-6">
-                      <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Date</label>
-                      <input 
-                        type="date" 
-                        value={newBook.date} 
-                        onChange={e => setNewBook(prev => ({ ...prev, date: e.target.value }))}
+                      <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Status</label>
+                      <select 
+                        value={newBook.status}
+                        onChange={e => setNewBook(prev => ({ ...prev, status: e.target.value }))}
                         className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                      />
+                      >
+                        <option value="readlist">Reading List</option>
+                        <option value="read">Read</option>
+                      </select>
                     </div>
                     <div className="flex items-center justify-between">
                       <button type="button" onClick={() => setShowAddForm(false)} className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
@@ -1375,26 +1476,33 @@
                       <div className="flex-grow">
                         <h4 className="font-semibold text-gray-800 dark:text-white">"{book.title}"</h4>
                         <p className="text-sm text-gray-600 dark:text-gray-400">by {book.author}</p>
-                        <div className="flex items-center space-x-4 mt-1">
-                          {book.rating && (
-                            <span className="text-sm bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded">
-                              {book.rating}/10
-                            </span>
-                          )}
-                          <span className="text-sm text-gray-500 dark:text-gray-400">
-                            {new Date(book.date).toLocaleDateString()}
-                          </span>
-                        </div>
-                        {book.notes && (
-                          <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">{book.notes}</p>
-                        )}
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {new Date(book.date).toLocaleDateString()}
+                        </span>
                       </div>
-                      <button 
-                        onClick={() => deleteBook(book.id)}
-                        className="text-gray-400 hover:text-red-500 ml-2"
-                      >
-                        <DeleteIcon />
-                      </button>
+                      <div className="flex space-x-2 ml-2">
+                        {view === 'readlist' ? (
+                          <button 
+                            onClick={() => markAsRead(book.id)}
+                            className="bg-green-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-600"
+                          >
+                            Mark Read
+                          </button>
+                        ) : (
+                          <button 
+                            onClick={() => markAsReadlist(book.id)}
+                            className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600"
+                          >
+                            Move to Reading List
+                          </button>
+                        )}
+                        <button 
+                          onClick={() => deleteBook(book.id)}
+                          className="text-gray-400 hover:text-red-500"
+                        >
+                          <DeleteIcon />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 ))
@@ -1469,7 +1577,7 @@
 
       // --- VIEWS / SECTIONS ---
       // UPDATED: MoneyView with edit/delete functionality
-      const MoneyView = ({ transactions, setTransactions, lendBorrow, setLendBorrow }) => { 
+      const MoneyView = ({ transactions, setTransactions, lendBorrow, setLendBorrow, addToArchive }) => { 
         const [view, setView] = useState('transactions');
         const [displayDate, setDisplayDate] = useState(() => { const today = gregorianToNepali(new Date().toISOString().split('T')[0]); return { year: today.year, month: today.month }; });
         const [isModalOpen, setIsModalOpen] = useState(false); 
@@ -1668,7 +1776,7 @@
               </div>
             )}
 
-            {view === 'lendBorrow' && <LendBorrowView lendBorrow={lendBorrow} setLendBorrow={setLendBorrow} />}
+            {view === 'lendBorrow' && <LendBorrowView lendBorrow={lendBorrow} setLendBorrow={setLendBorrow} addToArchive={addToArchive} />}
             <AddTransactionModal 
               isOpen={isModalOpen} 
               onClose={() => {
@@ -1685,7 +1793,7 @@
       };
 
       // ENHANCED LIFE VIEW WITH TABS LIKE MONEY SECTION
-      const LifeView = ({ todos, setTodos, toBuy, setToBuy, movies, setMovies, books, setBooks }) => { 
+      const LifeView = ({ todos, setTodos, toBuy, setToBuy, movies, setMovies, books, setBooks, addToArchive }) => { 
         const [view, setView] = useState('pomodoro');
 
         return (
@@ -1701,19 +1809,19 @@
             </div>
 
             {view === 'pomodoro' && <PomodoroTimerNew />}
-            {view === 'todos' && <ToDoList todos={todos} setTodos={setTodos} />}
-            {view === 'tobuy' && <ToBuyList toBuy={toBuy} setToBuy={setToBuy} />}
-            {view === 'movies' && <MoviesSection movies={movies} setMovies={setMovies} />}
-            {view === 'books' && <BooksSection books={books} setBooks={setBooks} />}
+            {view === 'todos' && <ToDoList todos={todos} setTodos={setTodos} addToArchive={addToArchive} />}
+            {view === 'tobuy' && <ToBuyList toBuy={toBuy} setToBuy={setToBuy} addToArchive={addToArchive} />}
+            {view === 'movies' && <MoviesSection movies={movies} setMovies={setMovies} addToArchive={addToArchive} />}
+            {view === 'books' && <BooksSection books={books} setBooks={setBooks} addToArchive={addToArchive} />}
           </React.Fragment>
         ); 
       };
 
       // UPDATED GROWVIEW WITH HABIT TRACKER
-      const GrowView = ({ habits, setHabits }) => { 
+      const GrowView = ({ habits, setHabits, addToArchive }) => { 
         return (
           <React.Fragment>
-            <HabitTracker habits={habits} setHabits={setHabits} />
+            <HabitTracker habits={habits} setHabits={setHabits} addToArchive={addToArchive} />
             <Stopwatch />
             <BMICalculator />
           </React.Fragment>
@@ -1721,7 +1829,7 @@
       };
 
       // FIXED: LendBorrowView with delete/paid functionality
-      const LendBorrowView = ({ lendBorrow, setLendBorrow }) => {
+      const LendBorrowView = ({ lendBorrow, setLendBorrow, addToArchive }) => {
           const [type, setType] = useState('lend');
           const [person, setPerson] = useState('');
           const [amount, setAmount] = useState('');
@@ -2224,6 +2332,7 @@
                           setTransactions={setTransactions} 
                           lendBorrow={lendBorrow} 
                           setLendBorrow={setLendBorrow}
+                          addToArchive={addToArchive}
                         />
                       )}
                       {currentView === 'life' && (
@@ -2236,12 +2345,14 @@
                           setMovies={setMovies}
                           books={books}
                           setBooks={setBooks}
+                          addToArchive={addToArchive}
                         />
                       )}
                       {currentView === 'grow' && (
                         <GrowView 
                           habits={habits}
                           setHabits={setHabits}
+                          addToArchive={addToArchive}
                         />
                       )}
                       {currentView === 'account' && (
