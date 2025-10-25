@@ -5,11 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
     <title>Mero Jivan</title>
     <!-- PWA MANIFEST -->
-    <!-- ✅ Fixed inline PWA manifest (base64 encoded) -->
-    <link rel="manifest" href='data:application/json;base64,eyJuYW1lIjoiTWVybyBKaXZhbiIsInNob3J0X25hbWUiOiJNZXJvIEppdmFuIiwic3RhcnRfdXJsIjoiLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwidGhlbWVfY29sb3IiOiIjMDY4OTBhIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmZmZmZmYiLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly9pLmliYi5jby9QekZRNmpqcy9sb2dvLnBuZyIsInNpemVzIjoiMTkyeDE5MiIsInR5cGUiOiJpbWFnZS9wbmcifSx7InNyYyI6Imh0dHBzOi8vaS5pYmIuY28vUHpGUTZqanMvbG9nby5wbmciLCJzaXplcyI6IjUxMng1MTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIn1dfQ==' />
+    <!-- Inline PWA manifest (replace old manifest link with this) -->
+    <link rel="manifest" href='data:application/json;base64,eyJuYW1lIjoiTWVybyBKaXZhbiIsInNob3J0X25hbWUiOiJNZXJvIEppdmFuIiwic3RhcnRfdXJsIjoiLyIsImRpc3BsYXkiOiJzdGFuZGFsb25lIiwidGhlbWVfY29sb3IiOiIjMDY4OTBhIiwiYmFja2dyb3VuZF9jb2xvciI6IiNmZmZmZmYiLCJpY29ucyI6W3sic3JjIjoiaHR0cHM6Ly93YWxscGFwZXJzLWNsYW4uY29tL3dwLWNvbnRlbnQvdXBsb2Fkcy8yMDIyLzExL3JpY2stYW5kLW1vcnR5LW1hdGNoaW5nLXBmcC0yLmpwZyIsInNpemVzIjoiMTkyeDE5MiIsInR5cGUiOiJpbWFnZS9wbmcifSx7InNyYyI6Imh0dHBzOi8vd2FsbHBhcGVycy1jbGFuLmNvbS93cC1jb250ZW50L3VwbG9hZHMvMjAyMi8xMS9yaWNrLWFuZC1tb3J0eS1tYXRjaGluZy1wZnAtMi5qcGciLCJzaXplcyI6IjUxMng1MTIiLCJ0eXBlIjoiaW1hZ2UvcG5nIn1dfQ==' />
     <meta name="theme-color" content="#06890a">
     <!-- WEBSITE ICON (FAVICON) -->
-    <link rel="icon" type="image/x-icon" href="https://i.ibb.co/PzFQ6jjs/logo.png">
+    <link rel="icon" type="image/x-icon" href="https://ibb.co/fGqvxFFV">
     <!-- NOTIFICATION PERMISSION -->
     <script>if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission();</script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -53,7 +53,7 @@
     <div id="root"></div>
 
     <script type="text/babel">
-      const { useState, useEffect, useMemo, useRef } = React;
+      const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
       // --- FIREBASE CONFIGURATION ---
       const firebaseConfig = {
@@ -501,11 +501,11 @@
             setTodos(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed, lastModified: Date.now() } : t)); 
           }; 
 
+          // FIXED: Delete todo - COMPLETELY REMOVE from todos
           const deleteTodo = (id) => { 
             const todo = todos.find(t => t.id === id);
             if (todo) {
-              addToArchive('todo', todo);
-              setTodos(prev => prev.filter(t => t.id !== id));
+              addToArchive('todo', todo, setTodos);
             }
           }; 
 
@@ -630,11 +630,12 @@
         const toggleItem = (id) => { 
           setToBuy(prev => prev.map(item => item.id === id ? { ...item, purchased: !item.purchased, lastModified: Date.now() } : item)); 
         }; 
+        
+        // FIXED: Delete item - COMPLETELY REMOVE from toBuy
         const deleteItem = (id) => { 
           const item = toBuy.find(i => i.id === id);
           if (item) {
-            addToArchive('toBuy', item);
-            setToBuy(prev => prev.filter(item => item.id !== id));
+            addToArchive('toBuy', item, setToBuy);
           }
         }; 
         
@@ -732,12 +733,11 @@
           setNewHabitName('');
         };
         
-        // Delete habit with archive
+        // FIXED: Delete habit - COMPLETELY REMOVE from habits
         const deleteHabit = (id) => {
           const habit = habits.find(h => h.id === id);
           if (habit) {
-            addToArchive('habit', habit);
-            setHabits(prev => prev.filter(h => h.id !== id));
+            addToArchive('habit', habit, setHabits);
           }
         };
         
@@ -1164,11 +1164,11 @@
           ));
         };
 
+        // FIXED: Delete movie - COMPLETELY REMOVE from movies
         const deleteMovie = (id) => {
           const movie = movies.find(m => m.id === id);
           if (movie) {
-            addToArchive('movie', movie);
-            setMovies(prev => prev.filter(m => m.id !== id));
+            addToArchive('movie', movie, setMovies);
           }
         };
 
@@ -1352,11 +1352,11 @@
           ));
         };
 
+        // FIXED: Delete book - COMPLETELY REMOVE from books
         const deleteBook = (id) => {
           const book = books.find(b => b.id === id);
           if (book) {
-            addToArchive('book', book);
-            setBooks(prev => prev.filter(b => b.id !== id));
+            addToArchive('book', book, setBooks);
           }
         };
 
@@ -1616,11 +1616,11 @@
           setIsModalOpen(true);
         };
         
+        // FIXED: Delete transaction - COMPLETELY REMOVE from transactions
         const deleteTransaction = (id) => {
           const transaction = transactions.find(t => t.id === id);
           if (transaction) {
-            addToArchive('transaction', transaction);
-            setTransactions(prev => prev.filter(t => t.id !== id));
+            addToArchive('transaction', transaction, setTransactions);
           }
         };
         
@@ -1829,29 +1829,45 @@
         ); 
       };
 
-      // FIXED: LendBorrowView with delete/paid functionality
+      // FIXED: LendBorrowView with proper paid/unpaid system
       const LendBorrowView = ({ lendBorrow, setLendBorrow, addToArchive }) => {
           const [type, setType] = useState('lend');
           const [person, setPerson] = useState('');
           const [amount, setAmount] = useState('');
           const [description, setDescription] = useState('');
           const [selectedPerson, setSelectedPerson] = useState('all');
+          const [showPaid, setShowPaid] = useState('unpaid'); // 'unpaid', 'paid', 'all'
 
           const people = useMemo(() => [...new Set(lendBorrow.map(item => item.person))], [lendBorrow]);
           
-          const filteredData = useMemo(() => {
-              if (selectedPerson === 'all') return lendBorrow;
-              return lendBorrow.filter(item => item.person === selectedPerson);
-          }, [lendBorrow, selectedPerson]);
-
+          // FIXED: Only count UNPAID items in totals
           const { totalLent, totalBorrowed } = useMemo(() => {
               let lent = 0, borrowed = 0;
               lendBorrow.forEach(item => {
-                  if(item.type === 'lend') lent += item.amount;
-                  else borrowed += item.amount;
+                  if (!item.paid) { // ONLY COUNT UNPAID ITEMS
+                      if(item.type === 'lend') lent += item.amount;
+                      else borrowed += item.amount;
+                  }
               });
               return { totalLent: lent, totalBorrowed: borrowed };
           }, [lendBorrow]);
+
+          // Filter data based on paid status
+          const filteredData = useMemo(() => {
+              let data = lendBorrow;
+              
+              if (selectedPerson !== 'all') {
+                  data = data.filter(item => item.person === selectedPerson);
+              }
+              
+              if (showPaid === 'unpaid') {
+                  data = data.filter(item => !item.paid);
+              } else if (showPaid === 'paid') {
+                  data = data.filter(item => item.paid);
+              }
+              
+              return data;
+          }, [lendBorrow, selectedPerson, showPaid]);
 
           const handleSubmit = (e) => {
               e.preventDefault();
@@ -1864,38 +1880,38 @@
                   description,
                   date: new Date().toISOString(),
                   lastModified: Date.now(),
-                  paid: false // Add paid status
+                  paid: false // NEW ENTRIES DEFAULT TO UNPAID
               }, ...prev]);
               setPerson('');
               setAmount('');
               setDescription('');
           };
 
-          // FIXED: Add toggle paid function
+          // Toggle paid status
           const togglePaid = (id) => {
             setLendBorrow(prev => prev.map(item => 
               item.id === id ? { ...item, paid: !item.paid, lastModified: Date.now() } : item
             ));
           };
 
-          // FIXED: Add delete function
+          // FIXED: Delete entry - COMPLETELY REMOVE from lendBorrow
           const deleteEntry = (id) => {
             const item = lendBorrow.find(i => i.id === id);
             if (item) {
-              addToArchive('lendBorrow', item);
-              setLendBorrow(prev => prev.filter(item => item.id !== id));
+              addToArchive('lendBorrow', item, setLendBorrow);
             }
           };
           
           return (
             <div className="space-y-6">
+                {/* Totals Section - ONLY SHOWS UNPAID AMOUNTS */}
                 <div className="grid grid-cols-2 gap-4 text-center">
                     <div className="bg-red-100 dark:bg-red-900/50 p-4 rounded-lg">
-                        <p className="text-sm text-red-800 dark:text-red-300">You Borrowed</p>
+                        <p className="text-sm text-red-800 dark:text-red-300">You Borrowed (Unpaid)</p>
                         <p className="text-2xl font-bold text-red-600 dark:text-red-400">रु {totalBorrowed.toLocaleString('en-NP')}</p>
                     </div>
                     <div className="bg-green-100 dark:bg-green-900/50 p-4 rounded-lg">
-                        <p className="text-sm text-green-800 dark:text-green-300">You Lent</p>
+                        <p className="text-sm text-green-800 dark:text-green-300">You Lent (Unpaid)</p>
                         <p className="text-2xl font-bold text-green-600 dark:text-green-400">रु {totalLent.toLocaleString('en-NP')}</p>
                     </div>
                 </div>
@@ -1917,16 +1933,24 @@
                      </form>
                 </div>
                 
+                {/* History Section with Paid/Unpaid Filter */}
                 <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6">
                     <div className="flex justify-between items-center mb-4">
                         <h3 className="font-bold text-lg text-gray-800 dark:text-white">History</h3>
-                        <select value={selectedPerson} onChange={e => setSelectedPerson(e.target.value)} className="p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
-                            <option value="all">All People</option>
-                            {people.map(p => <option key={p} value={p}>{p}</option>)}
-                        </select>
+                        <div className="flex space-x-2">
+                            <select value={selectedPerson} onChange={e => setSelectedPerson(e.target.value)} className="p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="all">All People</option>
+                                {people.map(p => <option key={p} value={p}>{p}</option>)}
+                            </select>
+                            <select value={showPaid} onChange={e => setShowPaid(e.target.value)} className="p-2 border rounded-lg bg-gray-50 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                                <option value="unpaid">Unpaid Only</option>
+                                <option value="paid">Paid Only</option>
+                                <option value="all">All</option>
+                            </select>
+                        </div>
                     </div>
                     <div className="space-y-2">
-                        {filteredData.length === 0 ? <p className="text-center text-gray-500 py-4">No records yet.</p> : 
+                        {filteredData.length === 0 ? <p className="text-center text-gray-500 py-4">No records found.</p> : 
                         [...filteredData].sort((a,b) => b.id - a.id).map(item => (
                             <div key={item.id} className={`p-3 rounded-lg flex justify-between items-center ${item.type === 'lend' ? 'bg-green-50 dark:bg-green-900/30' : 'bg-red-50 dark:bg-red-900/30'} ${item.paid ? 'opacity-60' : ''}`}>
                                 <div>
@@ -2169,15 +2193,23 @@
           const [archive, setArchive] = useStickyState([], 'lifeDashboard-archive');
           const [isConfirmingClear, setIsConfirmingClear] = useState(false);
           
-          // Archive system function
-          const addToArchive = (itemType, item) => {
+          // FIXED: Archive system function - MOVES items instead of copying
+          const addToArchive = useCallback((itemType, item, setOriginalState) => {
             const archivedItem = {
               ...item,
               archivedAt: new Date().toISOString(),
-              originalType: itemType
+              originalType: itemType,
+              lastModified: Date.now()
             };
+            
+            // IMMEDIATELY remove from original array before adding to archive
+            if (setOriginalState) {
+              setOriginalState(prev => prev.filter(i => i.id !== item.id));
+            }
+            
+            // Add to archive
             setArchive(prev => [archivedItem, ...prev]);
-          };
+          }, []);
 
           // Enhanced Auth state listener with proper sync
           useEffect(() => {
@@ -2399,8 +2431,3 @@
     </script>
   </body>
 </html>
-
-
-
-
-
