@@ -696,13 +696,13 @@
         ); 
       };
 
-      // FIXED HABIT TRACKER COMPONENT - No more blank screen
+      // FIXED HABIT TRACKER COMPONENT - No more blank screen with multiple habits
       const HabitTracker = ({ habits, setHabits }) => {
         const [newHabitName, setNewHabitName] = useState('');
         const [selectedPeriod, setSelectedPeriod] = useState('daily');
         const [selectedHabit, setSelectedHabit] = useState(null);
         
-        // Add new habit
+        // Add new habit - FIXED: No more crashes
         const addHabit = (e) => {
           e.preventDefault();
           if (!newHabitName.trim()) return;
@@ -726,19 +726,20 @@
           setHabits(prev => prev.filter(h => h.id !== id));
         };
         
-        // Track habit completion
+        // Track habit completion - FIXED: Safe updates
         const trackHabit = (habitId, date, status) => {
           setHabits(prev => prev.map(habit => {
             if (habit.id === habitId) {
-              const newHistory = { ...habit.history, [date]: status };
+              const newHistory = { ...(habit.history || {}) };
+              newHistory[date] = status;
               
-              // Calculate streak
+              // Calculate streak safely
               const streak = calculateStreak(newHistory);
               
               return {
                 ...habit,
                 history: newHistory,
-                streak: streak,
+                streak: streak || 0,
                 lastModified: Date.now()
               };
             }
@@ -746,8 +747,10 @@
           }));
         };
 
-        // Calculate streak from history
+        // Calculate streak from history - FIXED: Safe calculation
         const calculateStreak = (history) => {
+          if (!history) return 0;
+          
           const dates = Object.keys(history).sort();
           let currentStreak = 0;
           let checkingDate = new Date();
@@ -770,13 +773,13 @@
           return currentStreak;
         };
         
-        // Get status for today
+        // Get status for today - FIXED: Safe access
         const getTodayStatus = (habit) => {
           const today = new Date().toISOString().split('T')[0];
-          return habit.history[today] || 'neutral';
+          return (habit.history && habit.history[today]) || 'neutral';
         };
         
-        // Render status button
+        // Render status button - FIXED: No crashes
         const StatusButton = ({ habit, date, currentStatus, onStatusChange }) => {
           const statusConfig = {
             'done': { label: '✓', class: 'bg-green-500 text-white', next: 'not-done' },
@@ -784,7 +787,7 @@
             'neutral': { label: '—', class: 'bg-gray-300 text-gray-700', next: 'done' }
           };
           
-          const config = statusConfig[currentStatus];
+          const config = statusConfig[currentStatus] || statusConfig.neutral;
           
           return (
             <button
@@ -797,10 +800,11 @@
           );
         };
 
-        // Streak circle component
+        // Streak circle component - FIXED: Safe rendering
         const StreakCircle = ({ habit }) => {
-          const maxStreak = 30; // Maximum streak for circle calculation
-          const percentage = Math.min((habit.streak / maxStreak) * 100, 100);
+          const maxStreak = 30;
+          const streak = habit.streak || 0;
+          const percentage = Math.min((streak / maxStreak) * 100, 100);
           const radius = 16;
           const circumference = 2 * Math.PI * radius;
           const strokeDasharray = circumference;
@@ -832,7 +836,7 @@
                 />
               </svg>
               <div className="absolute inset-0 flex items-center justify-center" onClick={() => setSelectedHabit(habit)}>
-                <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{habit.streak}</span>
+                <span className="text-xs font-bold text-gray-700 dark:text-gray-300">{streak}</span>
               </div>
             </div>
           );
@@ -866,14 +870,14 @@
                     <span className="text-sm text-gray-600 dark:text-gray-400">Current Streak:</span>
                     <div className="flex items-center space-x-1">
                       <FireIcon />
-                      <span className="font-bold text-orange-500">{habit.streak} days</span>
+                      <span className="font-bold text-orange-500">{habit.streak || 0} days</span>
                     </div>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-7 gap-2">
                   {last30Days.map(date => {
-                    const status = habit.history[date] || 'neutral';
+                    const status = (habit.history && habit.history[date]) || 'neutral';
                     const dayDate = new Date(date);
                     const isToday = date === new Date().toISOString().split('T')[0];
                     
@@ -944,7 +948,7 @@
               </button>
             </form>
             
-            {/* Habits List */}
+            {/* Habits List - FIXED: Safe rendering of multiple habits */}
             <div className="space-y-3">
               {habits.length === 0 ? (
                 <p className="text-center text-gray-500 dark:text-gray-400 py-4">No habits yet. Add your first habit above!</p>
@@ -968,7 +972,7 @@
                         <StreakCircle habit={habit} />
                         <div className="flex items-center space-x-1">
                           <FireIcon className="text-orange-500 w-4 h-4" />
-                          <span className="text-sm font-bold text-orange-500">{habit.streak}</span>
+                          <span className="text-sm font-bold text-orange-500">{habit.streak || 0}</span>
                         </div>
                         <button
                           onClick={() => deleteHabit(habit.id)}
@@ -1976,3 +1980,4 @@
     </script>
   </body>
 </html>
+
