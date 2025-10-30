@@ -204,10 +204,7 @@
                   todos: resolveDataConflicts(data.todos || [], existingCloudData?.todos || [], 'todos'),
                   toBuy: resolveDataConflicts(data.toBuy || [], existingCloudData?.toBuy || [], 'toBuy'),
                   lendBorrow: resolveDataConflicts(data.lendBorrow || [], existingCloudData?.lendBorrow || [], 'lendBorrow'),
-                  movies: resolveDataConflicts(data.movies || [], existingCloudData?.movies || [], 'movies'),
-                  books: resolveDataConflicts(data.books || [], existingCloudData?.books || [], 'books'),
                   habits: resolveDataConflicts(data.habits || [], existingCloudData?.habits || [], 'habits'),
-                  archive: resolveDataConflicts(data.archive || [], existingCloudData?.archive || [], 'archive'),
                   settings: { ...existingCloudData?.settings, ...data.settings },
                   lastSync: new Date().toISOString(),
                   lastSyncBy: 'device_' + Math.random().toString(36).substr(2, 9)
@@ -236,10 +233,7 @@
                           todos: cloudData.todos || [],
                           toBuy: cloudData.toBuy || [],
                           lendBorrow: cloudData.lendBorrow || [],
-                          movies: cloudData.movies || [],
-                          books: cloudData.books || [],
                           habits: cloudData.habits || [],
-                          archive: cloudData.archive || [],
                           settings: cloudData.settings || {}
                       };
                   } else {
@@ -462,7 +456,7 @@
       };
       
       // FIXED TODO LIST - SIMPLIFIED "ADD" BUTTON
-      const ToDoList = ({ todos, setTodos, addToArchive }) => { 
+      const ToDoList = ({ todos, setTodos }) => { 
           const [newTodoText, setNewTodoText] = useState(''); 
           const [newTodoPriority, setNewTodoPriority] = useState('medium'); 
           const [activeTab, setActiveTab] = useState('today'); 
@@ -503,10 +497,7 @@
 
           // FIXED: Delete todo - COMPLETELY REMOVE from todos
           const deleteTodo = (id) => { 
-            const todo = todos.find(t => t.id === id);
-            if (todo) {
-              addToArchive('todo', todo, setTodos);
-            }
+            setTodos(prev => prev.filter(t => t.id !== id));
           }; 
 
           const priorityStyles = { 
@@ -619,7 +610,7 @@
           );
       };
 
-      const ToBuyList = ({ toBuy, setToBuy, addToArchive }) => { 
+      const ToBuyList = ({ toBuy, setToBuy }) => { 
         const [newItemText, setNewItemText] = useState(''); 
         const addItem = (e) => { 
           e.preventDefault(); 
@@ -633,10 +624,7 @@
         
         // FIXED: Delete item - COMPLETELY REMOVE from toBuy
         const deleteItem = (id) => { 
-          const item = toBuy.find(i => i.id === id);
-          if (item) {
-            addToArchive('toBuy', item, setToBuy);
-          }
+          setToBuy(prev => prev.filter(item => item.id !== id));
         }; 
         
         return ( 
@@ -708,8 +696,8 @@
         ); 
       };
 
-      // UPDATED HABIT TRACKER COMPONENT
-      const HabitTracker = ({ habits, setHabits, addToArchive }) => {
+      // FIXED HABIT TRACKER COMPONENT - No more blank screen
+      const HabitTracker = ({ habits, setHabits }) => {
         const [newHabitName, setNewHabitName] = useState('');
         const [selectedPeriod, setSelectedPeriod] = useState('daily');
         const [selectedHabit, setSelectedHabit] = useState(null);
@@ -735,10 +723,7 @@
         
         // FIXED: Delete habit - COMPLETELY REMOVE from habits
         const deleteHabit = (id) => {
-          const habit = habits.find(h => h.id === id);
-          if (habit) {
-            addToArchive('habit', habit, setHabits);
-          }
+          setHabits(prev => prev.filter(h => h.id !== id));
         };
         
         // Track habit completion
@@ -853,7 +838,7 @@
           );
         };
 
-        // Habit history modal
+        // Habit history modal - FIXED: No more blank screen
         const HabitHistoryModal = ({ habit, onClose }) => {
           if (!habit) return null;
 
@@ -880,7 +865,7 @@
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-gray-600 dark:text-gray-400">Current Streak:</span>
                     <div className="flex items-center space-x-1">
-                      <FireIcon className="text-orange-500" />
+                      <FireIcon />
                       <span className="font-bold text-orange-500">{habit.streak} days</span>
                     </div>
                   </div>
@@ -1123,396 +1108,6 @@
         );
       };
 
-      // =============================================
-      // UPDATED MOVIES AND BOOKS COMPONENTS
-      // =============================================
-      
-      const MoviesSection = ({ movies, setMovies, addToArchive }) => {
-        const [view, setView] = useState('watched');
-        const [showAddForm, setShowAddForm] = useState(false);
-        const [newMovie, setNewMovie] = useState({ title: '', status: 'watchlist' });
-
-        const watchedMovies = useMemo(() => movies.filter(m => m.status === 'watched'), [movies]);
-        const watchlistMovies = useMemo(() => movies.filter(m => m.status === 'watchlist'), [movies]);
-
-        const addMovie = (e) => {
-          e.preventDefault();
-          if (!newMovie.title.trim()) return;
-          
-          const movieToAdd = {
-            id: Date.now(),
-            title: newMovie.title,
-            status: newMovie.status,
-            date: new Date().toISOString().split('T')[0],
-            lastModified: Date.now()
-          };
-          
-          setMovies(prev => [movieToAdd, ...prev]);
-          setNewMovie({ title: '', status: 'watchlist' });
-          setShowAddForm(false);
-        };
-
-        const markAsWatched = (id) => {
-          setMovies(prev => prev.map(movie => 
-            movie.id === id ? { ...movie, status: 'watched', lastModified: Date.now() } : movie
-          ));
-        };
-
-        const markAsWatchlist = (id) => {
-          setMovies(prev => prev.map(movie => 
-            movie.id === id ? { ...movie, status: 'watchlist', lastModified: Date.now() } : movie
-          ));
-        };
-
-        // FIXED: Delete movie - COMPLETELY REMOVE from movies
-        const deleteMovie = (id) => {
-          const movie = movies.find(m => m.id === id);
-          if (movie) {
-            addToArchive('movie', movie, setMovies);
-          }
-        };
-
-        const shareList = () => {
-          const currentList = view === 'watched' ? watchedMovies : watchlistMovies;
-          const listText = currentList.map((movie, index) => 
-            `${index + 1}. ${movie.title}`
-          ).join('\n');
-          
-          const shareContent = `${view === 'watched' ? 'Watched Movies' : 'Watchlist'}:\n\n${listText}`;
-          
-          navigator.clipboard.writeText(shareContent).then(() => {
-            alert('List copied to clipboard!');
-          }).catch(() => {
-            // Fallback for older browsers
-            const textArea = document.createElement('textarea');
-            textArea.value = shareContent;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            alert('List copied to clipboard!');
-          });
-        };
-
-        return (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-lg text-gray-800 dark:text-white">Movies & Series</h3>
-              <div className="flex space-x-2">
-                <button onClick={shareList} className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">
-                  <ShareIcon />
-                </button>
-                <button onClick={() => setShowAddForm(true)} className="bg-teal-500 text-white p-2 rounded-lg hover:bg-teal-600">
-                  <PlusIcon />
-                </button>
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-              <nav className="-mb-px flex space-x-6">
-                <button 
-                  onClick={() => setView('watched')} 
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    view === 'watched' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                  }`}
-                >
-                  Watched ({watchedMovies.length})
-                </button>
-                <button 
-                  onClick={() => setView('watchlist')} 
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    view === 'watchlist' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                  }`}
-                >
-                  Watchlist ({watchlistMovies.length})
-                </button>
-              </nav>
-            </div>
-
-            {/* Add Movie Form */}
-            {showAddForm && (
-              <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-40">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md m-4">
-                  <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Add Movie</h3>
-                  <form onSubmit={addMovie}>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Title *</label>
-                      <input 
-                        type="text" 
-                        value={newMovie.title} 
-                        onChange={e => setNewMovie(prev => ({ ...prev, title: e.target.value }))}
-                        className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                        required 
-                      />
-                    </div>
-                    <div className="mb-6">
-                      <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Status</label>
-                      <select 
-                        value={newMovie.status}
-                        onChange={e => setNewMovie(prev => ({ ...prev, status: e.target.value }))}
-                        className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                      >
-                        <option value="watchlist">Watchlist</option>
-                        <option value="watched">Watched</option>
-                      </select>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <button type="button" onClick={() => setShowAddForm(false)} className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
-                      <button type="submit" className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg">Add Movie</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
-
-            {/* Movie List */}
-            <div className="space-y-3">
-              {(view === 'watched' ? watchedMovies : watchlistMovies).length === 0 ? (
-                <p className="text-center text-gray-400 dark:text-gray-500 py-4">
-                  No {view === 'watched' ? 'watched' : 'watchlist'} movies yet.
-                </p>
-              ) : (
-                (view === 'watched' ? watchedMovies : watchlistMovies).map(movie => (
-                  <div key={movie.id} className="p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-grow">
-                        <h4 className="font-semibold text-gray-800 dark:text-white">{movie.title}</h4>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {new Date(movie.date).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="flex space-x-2 ml-2">
-                        {view === 'watchlist' ? (
-                          <button 
-                            onClick={() => markAsWatched(movie.id)}
-                            className="bg-green-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-600"
-                          >
-                            Mark Watched
-                          </button>
-                        ) : (
-                          <button 
-                            onClick={() => markAsWatchlist(movie.id)}
-                            className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600"
-                          >
-                            Move to Watchlist
-                          </button>
-                        )}
-                        <button 
-                          onClick={() => deleteMovie(movie.id)}
-                          className="text-gray-400 hover:text-red-500"
-                        >
-                          <DeleteIcon />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        );
-      };
-
-      const BooksSection = ({ books, setBooks, addToArchive }) => {
-        const [view, setView] = useState('read');
-        const [showAddForm, setShowAddForm] = useState(false);
-        const [newBook, setNewBook] = useState({ title: '', author: '', status: 'readlist' });
-
-        const readBooks = useMemo(() => books.filter(b => b.status === 'read'), [books]);
-        const readlistBooks = useMemo(() => books.filter(b => b.status === 'readlist'), [books]);
-
-        const addBook = (e) => {
-          e.preventDefault();
-          if (!newBook.title.trim()) return;
-          
-          const bookToAdd = {
-            id: Date.now(),
-            title: newBook.title,
-            author: newBook.author,
-            status: newBook.status,
-            date: new Date().toISOString().split('T')[0],
-            lastModified: Date.now()
-          };
-          
-          setBooks(prev => [bookToAdd, ...prev]);
-          setNewBook({ title: '', author: '', status: 'readlist' });
-          setShowAddForm(false);
-        };
-
-        const markAsRead = (id) => {
-          setBooks(prev => prev.map(book => 
-            book.id === id ? { ...book, status: 'read', lastModified: Date.now() } : book
-          ));
-        };
-
-        const markAsReadlist = (id) => {
-          setBooks(prev => prev.map(book => 
-            book.id === id ? { ...book, status: 'readlist', lastModified: Date.now() } : book
-          ));
-        };
-
-        // FIXED: Delete book - COMPLETELY REMOVE from books
-        const deleteBook = (id) => {
-          const book = books.find(b => b.id === id);
-          if (book) {
-            addToArchive('book', book, setBooks);
-          }
-        };
-
-        const shareList = () => {
-          const currentList = view === 'read' ? readBooks : readlistBooks;
-          const listText = currentList.map((book, index) => 
-            `${index + 1}. "${book.title}" by ${book.author}`
-          ).join('\n');
-          
-          const shareContent = `${view === 'read' ? 'Read Books' : 'Reading List'}:\n\n${listText}`;
-          
-          navigator.clipboard.writeText(shareContent).then(() => {
-            alert('List copied to clipboard!');
-          }).catch(() => {
-            // Fallback for older browsers
-            const textArea = document.createElement('textarea');
-            textArea.value = shareContent;
-            document.body.appendChild(textArea);
-            textArea.select();
-            document.execCommand('copy');
-            document.body.removeChild(textArea);
-            alert('List copied to clipboard!');
-          });
-        };
-
-        return (
-          <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="font-bold text-lg text-gray-800 dark:text-white">Books</h3>
-              <div className="flex space-x-2">
-                <button onClick={shareList} className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600">
-                  <ShareIcon />
-                </button>
-                <button onClick={() => setShowAddForm(true)} className="bg-teal-500 text-white p-2 rounded-lg hover:bg-teal-600">
-                  <PlusIcon />
-                </button>
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
-              <nav className="-mb-px flex space-x-6">
-                <button 
-                  onClick={() => setView('read')} 
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    view === 'read' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                  }`}
-                >
-                  Read ({readBooks.length})
-                </button>
-                <button 
-                  onClick={() => setView('readlist')} 
-                  className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                    view === 'readlist' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                  }`}
-                >
-                  Reading List ({readlistBooks.length})
-                </button>
-              </nav>
-            </div>
-
-            {/* Add Book Form */}
-            {showAddForm && (
-              <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-40">
-                <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6 w-full max-w-md m-4">
-                  <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Add Book</h3>
-                  <form onSubmit={addBook}>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Title *</label>
-                      <input 
-                        type="text" 
-                        value={newBook.title} 
-                        onChange={e => setNewBook(prev => ({ ...prev, title: e.target.value }))}
-                        className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                        required 
-                      />
-                    </div>
-                    <div className="mb-4">
-                      <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Author *</label>
-                      <input 
-                        type="text" 
-                        value={newBook.author} 
-                        onChange={e => setNewBook(prev => ({ ...prev, author: e.target.value }))}
-                        className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                        required 
-                      />
-                    </div>
-                    <div className="mb-6">
-                      <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Status</label>
-                      <select 
-                        value={newBook.status}
-                        onChange={e => setNewBook(prev => ({ ...prev, status: e.target.value }))}
-                        className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600"
-                      >
-                        <option value="readlist">Reading List</option>
-                        <option value="read">Read</option>
-                      </select>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <button type="button" onClick={() => setShowAddForm(false)} className="bg-gray-200 hover:bg-gray-300 dark:bg-gray-600 dark:hover:bg-gray-500 text-gray-800 dark:text-white font-bold py-2 px-4 rounded-lg">Cancel</button>
-                      <button type="submit" className="bg-teal-600 hover:bg-teal-700 text-white font-bold py-2 px-4 rounded-lg">Add Book</button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
-
-            {/* Book List */}
-            <div className="space-y-3">
-              {(view === 'read' ? readBooks : readlistBooks).length === 0 ? (
-                <p className="text-center text-gray-400 dark:text-gray-500 py-4">
-                  No {view === 'read' ? 'read' : 'reading list'} books yet.
-                </p>
-              ) : (
-                (view === 'read' ? readBooks : readlistBooks).map(book => (
-                  <div key={book.id} className="p-3 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <div className="flex justify-between items-start">
-                      <div className="flex-grow">
-                        <h4 className="font-semibold text-gray-800 dark:text-white">"{book.title}"</h4>
-                        <p className="text-sm text-gray-600 dark:text-gray-400">by {book.author}</p>
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {new Date(book.date).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <div className="flex space-x-2 ml-2">
-                        {view === 'readlist' ? (
-                          <button 
-                            onClick={() => markAsRead(book.id)}
-                            className="bg-green-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-green-600"
-                          >
-                            Mark Read
-                          </button>
-                        ) : (
-                          <button 
-                            onClick={() => markAsReadlist(book.id)}
-                            className="bg-blue-500 text-white px-3 py-1 rounded-lg text-sm hover:bg-blue-600"
-                          >
-                            Move to Reading List
-                          </button>
-                        )}
-                        <button 
-                          onClick={() => deleteBook(book.id)}
-                          className="text-gray-400 hover:text-red-500"
-                        >
-                          <DeleteIcon />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-          </div>
-        );
-      };
-
       // FIXED AUTH COMPONENT - Working Google Sign-in
       const AuthComponent = ({ onSignIn, onSkip }) => {
         const [isLoading, setIsLoading] = useState(false);
@@ -1578,7 +1173,7 @@
 
       // --- VIEWS / SECTIONS ---
       // UPDATED: MoneyView with edit/delete functionality
-      const MoneyView = ({ transactions, setTransactions, lendBorrow, setLendBorrow, addToArchive }) => { 
+      const MoneyView = ({ transactions, setTransactions, lendBorrow, setLendBorrow }) => { 
         const [view, setView] = useState('transactions');
         const [displayDate, setDisplayDate] = useState(() => { const today = gregorianToNepali(new Date().toISOString().split('T')[0]); return { year: today.year, month: today.month }; });
         const [isModalOpen, setIsModalOpen] = useState(false); 
@@ -1618,10 +1213,7 @@
         
         // FIXED: Delete transaction - COMPLETELY REMOVE from transactions
         const deleteTransaction = (id) => {
-          const transaction = transactions.find(t => t.id === id);
-          if (transaction) {
-            addToArchive('transaction', transaction, setTransactions);
-          }
+          setTransactions(prev => prev.filter(t => t.id !== id));
         };
         
         const addTransaction = (transaction) => { 
@@ -1777,7 +1369,7 @@
               </div>
             )}
 
-            {view === 'lendBorrow' && <LendBorrowView lendBorrow={lendBorrow} setLendBorrow={setLendBorrow} addToArchive={addToArchive} />}
+            {view === 'lendBorrow' && <LendBorrowView lendBorrow={lendBorrow} setLendBorrow={setLendBorrow} />}
             <AddTransactionModal 
               isOpen={isModalOpen} 
               onClose={() => {
@@ -1794,7 +1386,7 @@
       };
 
       // ENHANCED LIFE VIEW WITH TABS LIKE MONEY SECTION
-      const LifeView = ({ todos, setTodos, toBuy, setToBuy, movies, setMovies, books, setBooks, addToArchive }) => { 
+      const LifeView = ({ todos, setTodos, toBuy, setToBuy }) => { 
         const [view, setView] = useState('pomodoro');
 
         return (
@@ -1804,25 +1396,21 @@
                 <button onClick={() => setView('pomodoro')} className={`py-2 px-1 border-b-2 font-medium text-sm ${view === 'pomodoro' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Pomodoro</button>
                 <button onClick={() => setView('todos')} className={`py-2 px-1 border-b-2 font-medium text-sm ${view === 'todos' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>To-Do List</button>
                 <button onClick={() => setView('tobuy')} className={`py-2 px-1 border-b-2 font-medium text-sm ${view === 'tobuy' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>To Buy</button>
-                <button onClick={() => setView('movies')} className={`py-2 px-1 border-b-2 font-medium text-sm ${view === 'movies' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Movies</button>
-                <button onClick={() => setView('books')} className={`py-2 px-1 border-b-2 font-medium text-sm ${view === 'books' ? 'border-teal-500 text-teal-600 dark:text-teal-400' : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700'}`}>Books</button>
               </nav>
             </div>
 
             {view === 'pomodoro' && <PomodoroTimerNew />}
-            {view === 'todos' && <ToDoList todos={todos} setTodos={setTodos} addToArchive={addToArchive} />}
-            {view === 'tobuy' && <ToBuyList toBuy={toBuy} setToBuy={setToBuy} addToArchive={addToArchive} />}
-            {view === 'movies' && <MoviesSection movies={movies} setMovies={setMovies} addToArchive={addToArchive} />}
-            {view === 'books' && <BooksSection books={books} setBooks={setBooks} addToArchive={addToArchive} />}
+            {view === 'todos' && <ToDoList todos={todos} setTodos={setTodos} />}
+            {view === 'tobuy' && <ToBuyList toBuy={toBuy} setToBuy={setToBuy} />}
           </React.Fragment>
         ); 
       };
 
       // UPDATED GROWVIEW WITH HABIT TRACKER
-      const GrowView = ({ habits, setHabits, addToArchive }) => { 
+      const GrowView = ({ habits, setHabits }) => { 
         return (
           <React.Fragment>
-            <HabitTracker habits={habits} setHabits={setHabits} addToArchive={addToArchive} />
+            <HabitTracker habits={habits} setHabits={setHabits} />
             <Stopwatch />
             <BMICalculator />
           </React.Fragment>
@@ -1830,7 +1418,7 @@
       };
 
       // FIXED: LendBorrowView with proper paid/unpaid system
-      const LendBorrowView = ({ lendBorrow, setLendBorrow, addToArchive }) => {
+      const LendBorrowView = ({ lendBorrow, setLendBorrow }) => {
           const [type, setType] = useState('lend');
           const [person, setPerson] = useState('');
           const [amount, setAmount] = useState('');
@@ -1896,10 +1484,7 @@
 
           // FIXED: Delete entry - COMPLETELY REMOVE from lendBorrow
           const deleteEntry = (id) => {
-            const item = lendBorrow.find(i => i.id === id);
-            if (item) {
-              addToArchive('lendBorrow', item, setLendBorrow);
-            }
+            setLendBorrow(prev => prev.filter(item => item.id !== id));
           };
           
           return (
@@ -2032,10 +1617,7 @@
                 'lifeDashboard-todos',
                 'lifeDashboard-toBuy',
                 'lifeDashboard-lendBorrow',
-                'lifeDashboard-movies',
-                'lifeDashboard-books',
                 'lifeDashboard-habits',
-                'lifeDashboard-archive',
                 'lifeDashboard-lastModified'
               ];
               
@@ -2187,30 +1769,9 @@
           const [todos, setTodos] = useStickyState([], 'lifeDashboard-todos');
           const [toBuy, setToBuy] = useStickyState([], 'lifeDashboard-toBuy');
           const [lendBorrow, setLendBorrow] = useStickyState([], 'lifeDashboard-lendBorrow');
-          const [movies, setMovies] = useStickyState([], 'lifeDashboard-movies');
-          const [books, setBooks] = useStickyState([], 'lifeDashboard-books');
           const [habits, setHabits] = useStickyState([], 'lifeDashboard-habits');
-          const [archive, setArchive] = useStickyState([], 'lifeDashboard-archive');
           const [isConfirmingClear, setIsConfirmingClear] = useState(false);
           
-          // FIXED: Archive system function - MOVES items instead of copying
-          const addToArchive = useCallback((itemType, item, setOriginalState) => {
-            const archivedItem = {
-              ...item,
-              archivedAt: new Date().toISOString(),
-              originalType: itemType,
-              lastModified: Date.now()
-            };
-            
-            // IMMEDIATELY remove from original array before adding to archive
-            if (setOriginalState) {
-              setOriginalState(prev => prev.filter(i => i.id !== item.id));
-            }
-            
-            // Add to archive
-            setArchive(prev => [archivedItem, ...prev]);
-          }, []);
-
           // Enhanced Auth state listener with proper sync
           useEffect(() => {
             if (auth) {
@@ -2234,10 +1795,7 @@
                     if (cloudData.todos) setTodos(cloudData.todos);
                     if (cloudData.toBuy) setToBuy(cloudData.toBuy);
                     if (cloudData.lendBorrow) setLendBorrow(cloudData.lendBorrow);
-                    if (cloudData.movies) setMovies(cloudData.movies);
-                    if (cloudData.books) setBooks(cloudData.books);
                     if (cloudData.habits) setHabits(cloudData.habits);
-                    if (cloudData.archive) setArchive(cloudData.archive);
                     if (cloudData.settings) {
                       setSettings(prev => ({ ...prev, ...cloudData.settings }));
                     }
@@ -2256,10 +1814,7 @@
                     if (cloudData.todos) setTodos(cloudData.todos);
                     if (cloudData.toBuy) setToBuy(cloudData.toBuy);
                     if (cloudData.lendBorrow) setLendBorrow(cloudData.lendBorrow);
-                    if (cloudData.movies) setMovies(cloudData.movies);
-                    if (cloudData.books) setBooks(cloudData.books);
                     if (cloudData.habits) setHabits(cloudData.habits);
-                    if (cloudData.archive) setArchive(cloudData.archive);
                     if (cloudData.settings) {
                       setSettings(prev => ({ ...prev, ...cloudData.settings }));
                     }
@@ -2288,10 +1843,7 @@
                   todos,
                   toBuy,
                   lendBorrow,
-                  movies,
-                  books,
                   habits,
-                  archive,
                   settings,
                   lastSync: new Date().toISOString(),
                   lastSyncBy: 'device_' + Math.random().toString(36).substr(2, 9)
@@ -2312,7 +1864,7 @@
             // Use a timeout to debounce rapid changes
             const timeoutId = setTimeout(syncData, 5000); // 5 second delay
             return () => clearTimeout(timeoutId);
-          }, [transactions, todos, toBuy, lendBorrow, movies, books, habits, archive, settings, user]);
+          }, [transactions, todos, toBuy, lendBorrow, habits, settings, user]);
 
           useEffect(() => {
               if (settings.theme === 'dark') {
@@ -2365,7 +1917,6 @@
                           setTransactions={setTransactions} 
                           lendBorrow={lendBorrow} 
                           setLendBorrow={setLendBorrow}
-                          addToArchive={addToArchive}
                         />
                       )}
                       {currentView === 'life' && (
@@ -2374,18 +1925,12 @@
                           setTodos={setTodos} 
                           toBuy={toBuy} 
                           setToBuy={setToBuy}
-                          movies={movies}
-                          setMovies={setMovies}
-                          books={books}
-                          setBooks={setBooks}
-                          addToArchive={addToArchive}
                         />
                       )}
                       {currentView === 'grow' && (
                         <GrowView 
                           habits={habits}
                           setHabits={setHabits}
-                          addToArchive={addToArchive}
                         />
                       )}
                       {currentView === 'account' && (
@@ -2431,4 +1976,3 @@
     </script>
   </body>
 </html>
-
